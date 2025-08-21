@@ -175,7 +175,7 @@ export class Calculator {
     else if (typeof data === 'object') {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
-      numbersToSum = Object.values(data).filter((value): value is number => typeof value === 'number' && !isNaN(value))
+      Object.values(data).filter((value: unknown): value is number => typeof value === 'number' && !isNaN(value))
     }
 
     if (numbersToSum.length > 0) {
