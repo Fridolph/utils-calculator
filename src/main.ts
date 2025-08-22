@@ -565,44 +565,45 @@ export class Calculator {
     userRateType?: RateType,
     userOptions?: BaseOptions,
   ): number {
-    const cacheKey = this.generateCacheKey({
-      originPrice,
-      userRate,
-      userRateType,
-    })
 
     let finalRatePrice: number = 0
-    if (originPrice === null || (isNumber(userRate) && userRate < 0)) {
-      return finalRatePrice
+    if (originPrice === null || originPrice === 0) {
+      return 0
     }
-    // 边界1 没有原价，或为0，要保证计算出来为Number 所以取0
-    if (originPrice === null || originPrice === 0) return finalRatePrice
+    if (!isNumber(userRate) || userRate < 0 || userRate > 1) {
+      console.error('折扣率参数错误，userRate 应为 [0, 1] 的小数')
+      return originPrice
+    }
 
+    const curOptions = this._getMergedOptions(userOptions)
+    const curRate = userRate ?? curOptions.taxRate
+    const curRateType = userRateType ?? curOptions.rateType
+
+    const cacheKey = this.generateCacheKey({
+      originPrice,
+      userRate: curRate,
+      userRateType: curRateType,
+    })
     if (this.calcCache.computeRate.has(cacheKey)) {
       return this.calcCache.computeRate.get(cacheKey) as number
     }
 
-
-    const curOptions = this._getMergedOptions(userOptions)
-    const rate = (userRate !== null ? userRate : curOptions.taxRate) as number
-    const rateType = userRateType != null ? userRateType : curOptions.rateType
-
     const addedRate = $number(1, {
       precision: curOptions.runtimePrecision,
-    }).add(rate).value
+    }).add(curRate).value
     const rateCalculators: { [key in RateType]: (price: number) => number } = {
       gst_free: () => 0,
       incl_gst: (price) =>
         $number(price, { precision: curOptions.runtimePrecision })
           .divide(addedRate)
-          .multiply(rate).value,
+          .multiply(curRate).value,
       excl_gst: (price) =>
-        $number(price, { precision: curOptions.runtimePrecision }).multiply(rate).value,
+        $number(price, { precision: curOptions.runtimePrecision }).multiply(curRate).value,
     }
     // 添加默认处理，防止访问不存在的键
-    const calculator = rateCalculators[rateType as RateType]
+    const calculator = rateCalculators[curRateType as RateType]
     if (!calculator) {
-      console.error(`Invalid rate type: ${rateType}`)
+      console.error(`Invalid rate type: ${curRateType}`)
       return finalRatePrice
     }
     finalRatePrice = calculator(originPrice)

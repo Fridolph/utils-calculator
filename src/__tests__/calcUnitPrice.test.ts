@@ -1,14 +1,15 @@
 import { CalcInst, Calculator } from '../main'
 
 // ----------------- 单价/总价计算测试模板 -----------------
-beforeEach(() => {
-  CalcInst.clearCache()
-  CalcInst.setOption('precision', 2)
-  CalcInst.setOption('taxRate', 0.1)
-  CalcInst.setOption('rateType', 'incl_gst')
-})
 
 describe('calcUnitPrice()', () => {
+
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
 
   it('should calculate unit price correctly with valid inputs', () => {
     // 正常计算场景

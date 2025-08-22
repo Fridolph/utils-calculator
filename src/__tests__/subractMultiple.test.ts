@@ -18,8 +18,8 @@ describe('subtractMultiple()', () => {
 
   it('should handle null initial value', () => {
     // 测试初始值为null的边界情况
-    expect(CalcInst.subtractMultiple(null, [5])).toBeNull()
-    expect(CalcInst.subtractMultiple(null, [1, 2, 3])).toBeNull()
+    expect(CalcInst.subtractMultiple(null as any, [5])).toBeNull()
+    expect(CalcInst.subtractMultiple(null as any, [1, 2, 3])).toBeNull()
   })
 
   it('should return null for invalid inputs', () => {
