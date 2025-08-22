@@ -30,7 +30,7 @@ describe('decimalToPercent()', () => {
     expect(CalcInst.decimalToPercent(0.3339)).toEqual(33.339)
 
     // 测试方法级精度覆盖全局配置
-    expect(CalcInst.decimalToPercent(0.3333, 1)).toEqual(33.3)
+    expect(CalcInst.decimalToPercent(0.3333, 1)).toEqual(33.3) // 33.33 -> 33.3
 
     // 恢复默认精度
     CalcInst.setOption('precision', 2)

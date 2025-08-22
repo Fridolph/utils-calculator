@@ -22,13 +22,13 @@ describe('sum()', () => {
 
   it('should respect custom precision configuration', () => {
     // 测试自定义精度对计算结果的影响
-    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('precision', 3)
 
-    // 验证3位精度数组求和
-    expect(CalcInst.sum([1.111, 2.222, 3.333])).toBe(6.666) // 无四舍五入
+    // 验证4位精度数组求和，最后保留3位小数
+    expect(CalcInst.sum([1.1111, 2.2222, 3.3333])).toBe(6.667) // 无四舍五入 6.6666
 
     // 验证需要四舍五入的场景
-    expect(CalcInst.sum([1.1115, 2.2225])).toBe(3.334) // 1.1115+2.2225=3.334 → 保留3位后为3.334
+    expect(CalcInst.sum([1.11555, 2.22255])).toBe(3.338) // 1.11555 + 2.22255 = 3.3381 → 保留3位后为3.338
 
     // 测试方法级精度覆盖全局配置
     expect(

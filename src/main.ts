@@ -212,9 +212,12 @@ export class Calculator {
     data: { [key: string]: number } | number[],
     userOptions?: BaseOptions
   ): number {
-    let mergedOptions = this.getOptions()
-    if (typeof userOptions === 'object')
-      mergedOptions = assign(this.getOptions(), userOptions)
+    const curOptions = this.getOptions()
+    let mergedOptions = curOptions
+    // 不展开了 约定传配置项，乱传不管
+    if (typeof userOptions === 'object') {
+      mergedOptions = assign(curOptions, userOptions)
+    }
 
     const cacheKey = this.generateCacheKey({ data, mergedOptions })
     if (this.calcCache.sum.has(cacheKey)) {
@@ -239,18 +242,9 @@ export class Calculator {
 
     if (numbersToSum.length > 0) {
       const sumResult = numbersToSum.reduce((acc: number, num: number) => {
-        const accNumber = $number(acc, {
-          precision: mergedOptions.runtimePrecision,
-        }).value
-        const numNumber = $number(num, {
-          precision: mergedOptions.runtimePrecision,
-        }).value
-        // 为不丢失计算过程中的精度，每一项计算都需使用 precision 参数进行格式化，使其精度一致再进行运算
-        const tempResult = $number(accNumber, {
-          precision: mergedOptions.runtimePrecision,
-        }).add(numNumber).value
-        return tempResult
-      }, $number(0, { precision: mergedOptions.runtimePrecision }).value)
+        const tempTotal = $number(acc, { precision: mergedOptions.runtimePrecision }).add(num)
+        return tempTotal
+      }, 0)
       total = sumResult
     }
 
@@ -418,26 +412,37 @@ export class Calculator {
    */
   public percentToDecimal(
     originPercentage: number | null,
-    decimalPlaces: number = 2
+    decimalPlaces?: number,
   ): number | null {
-    const cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
+    let cacheKey
+    if (decimalPlaces === null || decimalPlaces === undefined) {
+      cacheKey = this.generateCacheKey({ originPercentage })
+    }
+    else {
+      cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
+    }
+
     if (this.calcCache.percentToDecimal.has(cacheKey)) {
       return this.calcCache.percentToDecimal.get(cacheKey) as number | null
     }
     // 边界情况：传 null 默认不处理
     if (originPercentage === null || isNaN(originPercentage)) return null
 
+    const curOptions = this.getOptions()
     // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
     // 最终的小数位数是要比传的多两位的
-    let handledPrecision = 2
+    let handledPrecision
+    // 若传代码用户自己控制精度
     if (typeof decimalPlaces === 'number' && decimalPlaces >= 0) {
-      handledPrecision = decimalPlaces + 2
-    } else {
-      handledPrecision = 4
+      handledPrecision = decimalPlaces
+    }
+    // 没传 默认precision是2，这里为保证转换一致，要加 2
+    else {
+      handledPrecision = curOptions.precision + 2
     }
 
     const result = $number(originPercentage, {
-      precision: this.getOptions().runtimePrecision + 2,
+      precision: curOptions.runtimePrecision + 2,
     }).divide(100).value
     this.calcCache.percentToDecimal.set(cacheKey, result)
 
@@ -457,25 +462,29 @@ export class Calculator {
     decimalPlaces: number = 2
   ): number | null {
     const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
-    if (this.calcCache.decimalToPercent.has(cacheKey)) {
-      return this.calcCache.decimalToPercent.get(cacheKey) as number | null
-    }
-    // 边界情况：传 null 默认不处理
-    if (originDecimal === null || isNaN(originDecimal)) return null
 
-    let curOptions = this.getOptions()
-    const result = $number(originDecimal, {
-      precision: curOptions.runtimePrecision,
-    }).multiply(100).value
-    this.calcCache.decimalToPercent.set(cacheKey, result)
-    return $number(result, { precision: decimalPlaces }).value
+    const cache = this.getCache('percentToDecimal')
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey) as number | null;
+    }
+
+    const curOptions = this.getOptions()
+    // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
+    // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
+    const precision = decimalPlaces === null
+      ? this.getOptions().runtimePrecision
+      : decimalPlaces
+  
+    const result = $number(originDecimal as number, { precision: curOptions.runtimePrecision }).divide(100).value;
+    this.calcCache.percentToDecimal.set(cacheKey, result);
+    return $number(result, { precision: curOptions.precision }).value
   }
 
   /**
    * 计算折扣后的价格
    * @param originalPrice 原始价格
    * @param discountRate 折扣率，例如 0.8 代表 8 折
-   * @description 折扣不能为0和1，但允许用户这样输，约定如下：
+   * @description 折扣不能为 0 和 1，但允许用户这样输，约定如下：
    * @description 0 为 不打折，返原始价格；1 为 白送，最终价格为为 0
    * @returns 折扣后的价格，如果输入不合法返回 null
    */
