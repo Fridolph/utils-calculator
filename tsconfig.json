@@ -1,15 +1,16 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+  "include": ["src/**/*", "./*.ts"],
   "compilerOptions": {
+    
     "rootDir": "./src",
     "outDir": "./dist",
-    
-
+    "module": "ESNext", // 支持 ESM
+    "moduleResolution": "Node", // 兼容 Node.js 模块解析
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
     "target": "es2021",
-    "types": [],
+    "types": ["jest"],
     // For nodejs:
     "lib": ["ES2021", "DOM"],
     // "types": ["node"],
@@ -22,7 +23,7 @@
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
-    // "exactOptionalPropertyTypes": false,
+    "exactOptionalPropertyTypes": true,
 
     // Style Options
     // "noImplicitReturns": true,
@@ -39,6 +40,6 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }

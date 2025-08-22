@@ -12,9 +12,10 @@ type CalcBaseTotalParams = {
 }
 
 type BaseOptions = {
-  precision?: number
-  taxRate?: number
-  rateType?: RateType
+  precision: number
+  taxRate: number
+  rateType: RateType
+  runtimePrecision: 8
 }
 
 type RateType = 'excl_gst' | 'incl_gst' | 'gst_free'
@@ -31,4 +32,15 @@ interface NumberFormatOptions {
   increment?: any
   useVedic?: boolean
   fromCents?: boolean
+}
+
+interface CacheStore {
+  sum: Map<string, unknown>
+  subtractMultiple: Map<string, unknown>
+  calcUnitPrice: Map<string, unknown>
+  calcLinePrice: Map<string, unknown>
+  percentToDecimal: Map<string, unknown>
+  decimalToPercent: Map<string, unknown>
+  calculateDiscountedPrice: Map<string, unknown>
+  computeRate: Map<string, unknown>
 }

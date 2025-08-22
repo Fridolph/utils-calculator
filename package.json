@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc"
+    "build": "npx tsc",
+    "test": "jest"
   },
   "keywords": [
     "calculator",
@@ -13,9 +14,16 @@
   "license": "ISC",
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {
-    "currency.js": "^2.0.4"
+    "babel-jest": "^30.0.5",
+    "currency.js": "^2.0.4",
+    "radash": "^12.1.1"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-typescript": "^7.27.1",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
   }
 }

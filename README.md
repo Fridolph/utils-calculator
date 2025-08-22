@@ -88,14 +88,10 @@ CalcInst.clearCache('all');
 
 ## 🛠️ 配置选项
 
-通过 `setOptions` 方法可以自定义以下配置：
+通过 `setOption` 方法可以自定义以下配置：
 
 ```typescript
-CalcInst.setOptions({
-  precision: 4,       // 计算精度（默认：2）
-  taxRate: 0.15,      // 默认税率（默认：0.1）
-  rateType: 'excl_gst' // 默认税率类型（默认：'incl_gst'）
-});
+CalcInst.setOption('precision', 2);
 ```
 
 ---
