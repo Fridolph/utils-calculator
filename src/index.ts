@@ -31,6 +31,7 @@ export class Calculator {
   // 性能考虑：将每次的计算结果进行缓存，若有同类型的计算，可直接返回缓存结果
   private calculationCache: {
     sum: Map<string, number>
+    subtractMultiple: Map<string, number>
     calcUnitPrice: Map<string, CalcBaseTotalParams>
     calcLinePrice: Map<string, CalcBaseTotalParams>
     percentToDecimal: Map<string, number | null>
@@ -42,6 +43,7 @@ export class Calculator {
   private constructor() {
     this.calculationCache = {
       sum: new Map(),
+      subtractMultiple: new Map(),
       calcUnitPrice: new Map(),
       calcLinePrice: new Map(),
       percentToDecimal: new Map(),
@@ -83,6 +85,9 @@ export class Calculator {
     if (cacheType === 'all' || cacheType === 'sum') {
       this.calculationCache.sum.clear()
     }
+    if (cacheType === 'all' || cacheType === 'subtractMultiple') {
+      this.calculationCache.subtractMultiple.clear()
+    }
     if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
       this.calculationCache.calcUnitPrice.clear()
     }
@@ -114,6 +119,7 @@ export class Calculator {
   public queryCacheStat(cacheType: CacheType = 'all') {
     const cacheGroups = {
       sum: this.calculationCache.sum,
+      
       calcUnitPrice: this.calculationCache.calcUnitPrice,
       calcLinePrice: this.calculationCache.calcLinePrice,
       percentToDecimal: this.calculationCache.percentToDecimal,
@@ -187,6 +193,37 @@ export class Calculator {
 
     this.calculationCache.sum.set(cacheKey, total)
     return total
+  }
+
+
+  /**
+   * 从初始值中减去多个值
+   * @param initialValue 初始值
+   * @param subtractValues 要减去的值数组
+   * @returns 减法运算后的结果
+   * @example subtractMultiple(9.99, 8.88) -> 1.11
+   * @example subtractMultiple(15, [1,2,3,4]) -> 5
+   */
+  public subtractMultiple(initialValue: number | null, subtractValues: number[]): number | null {
+    // 如果第二个参数是数字，转换为数组
+    const valueArray: number[] = typeof subtractValues === 'number' ? [subtractValues] : subtractValues
+
+    if (initialValue === null || valueArray.some(value => typeof value !== 'number' || isNaN(value))) {
+      return null
+    }
+
+    const cacheKey = this.generateCacheKey({ initialValue, subtractValues })
+    if (this.calculationCache.sum.has(cacheKey)) {
+      return this.calculationCache.sum.get(cacheKey)!
+    }
+
+    const validSubtractValues = subtractValues.filter(value => typeof value === 'number' && !isNaN(value))
+    const result = validSubtractValues.reduce((acc, value) => {
+      return $number(acc, { precision: this.baseOptions.precision }).subtract(value).value
+    }, initialValue)
+    this.calculationCache.sum.set(cacheKey, result)
+
+    return result
   }
 
   /**

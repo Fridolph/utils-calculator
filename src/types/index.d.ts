@@ -1,5 +1,9 @@
-type CacheType = 'all' | 'sum' | 'calcUnitPrice' | 'calcLinePrice' |
-  'percentToDecimal' | 'decimalToPercent' | 'calculateDiscountedPrice' | 'computeRate'
+type CacheType = 'all' 
+  | 'sum' | 'subtractMultiple'
+  | 'calcUnitPrice' | 'calcLinePrice'
+  | 'percentToDecimal' | 'decimalToPercent'
+  | 'calculateDiscountedPrice' | 'computeRate'
+
 
 type CalcBaseTotalParams = {
   quantity: number | null
