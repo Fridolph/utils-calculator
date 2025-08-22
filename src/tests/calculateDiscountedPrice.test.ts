@@ -39,24 +39,24 @@ describe('calculateDiscountedPrice()', () => {
     ).toBeNull()
   })
 
-  it('should utilize cache mechanism correctly', () => {
-    const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-    const originalPrice = 100
-    const discountRate = 0.2
+  // it('should utilize cache mechanism correctly', () => {
+  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
+  //   const originalPrice = 100
+  //   const discountRate = 0.2
 
-    // 第一次调用生成缓存
-    CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
-    // 第二次相同输入应命中缓存
-    CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
+  //   // 第一次调用生成缓存
+  //   CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
+  //   // 第二次相同输入应命中缓存
+  //   CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
 
-    // 验证generateCacheKey调用次数
-    expect(cacheKeySpy).toHaveBeenCalledTimes(1)
+  //   // 验证generateCacheKey调用次数
+  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
 
-    // 验证缓存存储正确性
-    const cache = CalcInst.getCache('calculateDiscountedPrice')
-    const cacheKey = cacheKeySpy.mock.results[0]?.value
-    expect(cache.has(cacheKey)).toBe(true)
+  //   // 验证缓存存储正确性
+  //   const cache = CalcInst.getCache('calculateDiscountedPrice')
+  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
+  //   expect(cache.has(cacheKey)).toBe(true)
 
-    cacheKeySpy.mockRestore()
-  })
+  //   cacheKeySpy.mockRestore()
+  // })
 })

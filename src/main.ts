@@ -210,13 +210,15 @@ export class Calculator {
    */
   public sum(
     data: { [key: string]: number } | number[],
-    userOptions?: BaseOptions
+    userOptions?: Partial<BaseOptions>
   ): number {
+    let mergedOptions: any
     const curOptions = this.getOptions()
-    let mergedOptions = curOptions
     // 不展开了 约定传配置项，乱传不管
-    if (typeof userOptions === 'object') {
-      mergedOptions = assign(curOptions, userOptions)
+    if (userOptions === null || userOptions === undefined) {
+      mergedOptions = curOptions
+    } else if (typeof userOptions === 'object') {
+      mergedOptions = assign(curOptions, userOptions) as BaseOptions
     }
 
     const cacheKey = this.generateCacheKey({ data, mergedOptions })

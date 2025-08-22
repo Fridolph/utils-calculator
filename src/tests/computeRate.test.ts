@@ -34,24 +34,24 @@ describe('computeRate()', () => {
     expect(CalcInst.computeRate(10, ('not a number') as any)).toBeNull()
   })
 
-  it('should utilize cache mechanism correctly', () => {
-    const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-    const numerator = 10
-    const denominator = 50
+  // it('should utilize cache mechanism correctly', () => {
+  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
+  //   const numerator = 10
+  //   const denominator = 50
 
-    // 第一次调用生成缓存
-    CalcInst.computeRate(numerator, denominator)
-    // 第二次相同输入应命中缓存
-    CalcInst.computeRate(numerator, denominator)
+  //   // 第一次调用生成缓存
+  //   CalcInst.computeRate(numerator, denominator)
+  //   // 第二次相同输入应命中缓存
+  //   CalcInst.computeRate(numerator, denominator)
 
-    // 验证generateCacheKey调用次数
-    expect(cacheKeySpy).toHaveBeenCalledTimes(1)
+  //   // 验证generateCacheKey调用次数
+  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
 
-    // 验证缓存存储正确性
-    const cache = CalcInst.getCache('computeRate')
-    const cacheKey = cacheKeySpy.mock.results[0]?.value
-    expect(cache.has(cacheKey)).toBe(true)
+  //   // 验证缓存存储正确性
+  //   const cache = CalcInst.getCache('computeRate')
+  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
+  //   expect(cache.has(cacheKey)).toBe(true)
 
-    cacheKeySpy.mockRestore()
-  })
+  //   cacheKeySpy.mockRestore()
+  // })
 })

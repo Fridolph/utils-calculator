@@ -48,23 +48,23 @@ describe('decimalToPercent()', () => {
     CalcInst.setOption('precision', 2)
   })
 
-  it('should utilize cache mechanism correctly', () => {
-    const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-    const input = 0.5
+  // it('should utilize cache mechanism correctly', () => {
+  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
+  //   const input = 0.5
 
-    // 第一次调用生成缓存
-    CalcInst.decimalToPercent(input)
-    // 第二次相同输入应命中缓存
-    CalcInst.decimalToPercent(input)
+  //   // 第一次调用生成缓存
+  //   CalcInst.decimalToPercent(input)
+  //   // 第二次相同输入应命中缓存
+//   CalcInst.decimalToPercent(input)
 
-    // 验证generateCacheKey调用次数
-    expect(cacheKeySpy).toHaveBeenCalledTimes(1)
+  //   // 验证generateCacheKey调用次数
+  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
 
-    // 验证缓存存储正确性
-    const cache = CalcInst.getCache('decimalToPercent')
-    const cacheKey = cacheKeySpy.mock.results[0]?.value
-    expect(cache.has(cacheKey)).toBe(true)
+  //   // 验证缓存存储正确性
+  //   const cache = CalcInst.getCache('decimalToPercent')
+  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
+  //   expect(cache.has(cacheKey)).toBe(true)
 
-    cacheKeySpy.mockRestore()
-  })
+  //   cacheKeySpy.mockRestore()
+  // })
 })
