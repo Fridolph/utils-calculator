@@ -1,7 +1,14 @@
-import { CalcInst, Calculator } from '../main'
+import { CalcInst } from '../main'
 
 // ----------------- 减法测试模板 -----------------
 describe('subtractMultiple()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should subtract single value correctly', () => {
     // 测试基本减法运算
     expect(CalcInst.subtractMultiple(9.99, [8.88])).toBe(1.11)
@@ -21,7 +28,7 @@ describe('subtractMultiple()', () => {
     expect(CalcInst.subtractMultiple(10, ['abc'] as any[])).toBeNull()
     expect(CalcInst.subtractMultiple(NaN, [5] as any[])).toBeNull()
     expect(CalcInst.subtractMultiple(10, [NaN] as any[])).toBeNull()
-    
+
     // 基础值参数非法
     expect(CalcInst.subtractMultiple(null as any, [5])).toBeNull()
     expect(CalcInst.subtractMultiple('abc' as any, [5])).toBeNull()

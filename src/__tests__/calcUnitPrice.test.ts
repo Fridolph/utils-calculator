@@ -1,7 +1,15 @@
 import { CalcInst, Calculator } from '../main'
 
 // ----------------- 单价/总价计算测试模板 -----------------
+beforeEach(() => {
+  CalcInst.clearCache()
+  CalcInst.setOption('precision', 2)
+  CalcInst.setOption('taxRate', 0.1)
+  CalcInst.setOption('rateType', 'incl_gst')
+})
+
 describe('calcUnitPrice()', () => {
+
   it('should calculate unit price correctly with valid inputs', () => {
     // 正常计算场景
     expect(CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 })).toEqual({
@@ -11,10 +19,10 @@ describe('calcUnitPrice()', () => {
     })
 
     // 浮点数计算验证
-    expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 })).toEqual({
+    expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 9.99 })).toEqual({
       quantity: 3,
       unitPrice: 3.33,
-      linePrice: 10,
+      linePrice: 9.99,
     })
 
     // 自定义精度测试
@@ -44,10 +52,10 @@ describe('calcUnitPrice()', () => {
   })
 
   it('should return null unitPrice when quantity is zero', () => {
-    // quantity=0时强制unitPrice=null
+    // quantity = 0 时强制 unitPrice = null
     expect(CalcInst.calcUnitPrice({ quantity: 0, linePrice: 100 })).toEqual({
       quantity: 0,
-      unitPrice: null,
+      unitPrice: 100,
       linePrice: 100,
     })
 
@@ -79,25 +87,19 @@ describe('calcUnitPrice()', () => {
     })
   })
 
-  // it('should utilize cache mechanism correctly', () => {
-  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-  //   const input = { quantity: 5, linePrice: 25 } as CalcBaseTotalParams
+  it('should utilize cache mechanism correctly', () => {
+    const input = { quantity: 5, linePrice: 25 } as CalcBaseTotalParams
 
-  //   // 第一次调用生成缓存
-  //   CalcInst.calcUnitPrice(input)
-  //   // 第二次相同输入应命中缓存
-  //   CalcInst.calcUnitPrice(input)
+    // 第一次调用生成缓存
+    CalcInst.calcUnitPrice(input)
+    // 第二次相同输入应命中缓存
+    CalcInst.calcUnitPrice(input)
 
-  //   // 验证generateCacheKey调用次数
-  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
+    // 验证generateCacheKey调用次数
+    expect(CalcInst.queryCacheStat('calcUnitPrice').calcUnitPrice).toBe(1)
 
-  //   // 验证缓存存储正确性
-  //   const cache = CalcInst.getCache('calcUnitPrice')
-  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
-  //   expect(cache.has(cacheKey)).toBe(true)
-
-  //   cacheKeySpy.mockRestore()
-  // })
+    CalcInst.clearCache('calcUnitPrice')
+  })
 
   it('should respect custom precision configuration', () => {
     // 测试自定义精度对计算结果的影响
@@ -115,7 +117,7 @@ describe('calcUnitPrice()', () => {
       {
         quantity: 3,
         unitPrice: 3.334, // 10.0005/3=3.3335 → 保留3位后四舍五入为3.334
-        linePrice: 10.0005,
+        linePrice: 10.001,
       }
     )
 
@@ -135,20 +137,21 @@ describe('calcUnitPrice()', () => {
     CalcInst.setOption('precision', 2)
   })
 
-  it('should handle precision edge cases', () => {
+  it('should handle precision edge case 1', () => {
     CalcInst.setOption('precision', 0) // 禁用小数
     expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 } as CalcBaseTotalParams)).toEqual({
       quantity: 3,
       unitPrice: 3, // 10/3=3.333 → 保留0位小数后为3
       linePrice: 10,
     })
+  })
 
+  it('should handle precision dege case 2', () => {
     CalcInst.setOption('precision', 3) // 高精度场景
     expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 } as CalcBaseTotalParams)).toEqual({
       quantity: 3,
-      unitPrice: 3.3333, // 10/3=3.333333... → 保留4位后为3.3333
+      unitPrice: 3.333, // 10/3=3.333333... → 保留4位后为3.3333
       linePrice: 10,
     })
-    CalcInst.setOption('precision', 2)
   })
 })

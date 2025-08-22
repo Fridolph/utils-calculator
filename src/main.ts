@@ -1,5 +1,8 @@
 import { $number } from './utils'
-import { assign, clone } from 'radash'
+import {
+  isNumber, isObject,
+  assign, clone,
+} from 'radash'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -62,14 +65,14 @@ export class Calculator {
   ): void {
     switch (option) {
       case 'precision':
-        if (typeof value === 'number' && value >= 0 && value <= 8) {
+        if (isNumber(value) && value >= 0 && value <= 8) {
           this.baseOptions.precision = value
         } else {
           throw new Error('Precision must be a number between 0 and 8')
         }
         break
       case 'taxRate':
-        if (typeof value === 'number' && value >= 0 && value <= 1) {
+        if (isNumber(value) && value >= 0 && value <= 1) {
           this.baseOptions.taxRate = value
         } else {
           throw new Error('Tax rate must be a number between 0 and 1')
@@ -89,6 +92,16 @@ export class Calculator {
 
   public getOptions(): BaseOptions {
     return this.baseOptions
+  }
+
+  public _getMergedOptions(userOptions?: Partial<BaseOptions>) {
+    const curOptions = this.getOptions()
+    return {
+      precision: userOptions?.precision ?? curOptions.precision,
+      taxRate: userOptions?.taxRate ?? curOptions.taxRate,
+      rateType: userOptions?.rateType ?? curOptions.rateType,
+      runtimePrecision: curOptions.runtimePrecision,
+    }
   }
 
   public getCache(): CacheStore
@@ -212,14 +225,7 @@ export class Calculator {
     data: { [key: string]: number } | number[],
     userOptions?: Partial<BaseOptions>
   ): number {
-    let mergedOptions: any
-    const curOptions = this.getOptions()
-    // 不展开了 约定传配置项，乱传不管
-    if (userOptions === null || userOptions === undefined) {
-      mergedOptions = curOptions
-    } else if (typeof userOptions === 'object') {
-      mergedOptions = assign(curOptions, userOptions) as BaseOptions
-    }
+    const mergedOptions = this._getMergedOptions(userOptions)
 
     const cacheKey = this.generateCacheKey({ data, mergedOptions })
     if (this.calcCache.sum.has(cacheKey)) {
@@ -231,20 +237,20 @@ export class Calculator {
 
     if (Array.isArray(data)) {
       numbersToSum = data.filter(
-        (num) => typeof num === 'number' && !isNaN(num)
+        (num) => isNumber(num) && !isNaN(num)
       )
-    } else if (typeof data === 'object') {
+    } else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
         (value: unknown): value is number =>
-          typeof value === 'number' && !isNaN(value)
+          isNumber(value) && !isNaN(value)
       )
     }
 
     if (numbersToSum.length > 0) {
       const sumResult = numbersToSum.reduce((acc: number, num: number) => {
-        const tempTotal = $number(acc, { precision: mergedOptions.runtimePrecision }).add(num)
+        const tempTotal = $number(acc, { precision: mergedOptions.runtimePrecision }).add(num).value
         return tempTotal
       }, 0)
       total = sumResult
@@ -263,33 +269,31 @@ export class Calculator {
    * @example subtractMultiple(15, [1,2,3,4]) -> 5
    */
   public subtractMultiple(
-    initialValue: number | null,
+    initialValue: number,
     subtractValues: number[],
     userOptions?: BaseOptions
   ): number | null {
     // 如果第二个参数是数字，转换为数组
     const valueArray: number[] =
-      typeof subtractValues === 'number' ? [subtractValues] : subtractValues
+      isNumber(subtractValues) ? [subtractValues] : subtractValues
 
-    if (
-      initialValue === null ||
-      valueArray.some((value) => typeof value !== 'number' || isNaN(value))
-    ) {
-      return null
+    if (!isNumber(initialValue)) {
+      console.error('被减数应为 Number 类型，请处理好参数类型再计算')
+      return initialValue
+    }
+    if (subtractValues.some(v => !isNumber(v))) {
+      console.error('待减项应为 Number 类型，请处理好参数类型再计算')
+      return initialValue
     }
 
-    let mergedOptions = this.getOptions()
-    if (typeof userOptions === 'object')
-      mergedOptions = assign(this.getOptions(), userOptions)
     const cacheKey = this.generateCacheKey({ initialValue, subtractValues })
     if (this.calcCache.subtractMultiple.has(cacheKey)) {
       return this.calcCache.subtractMultiple.get(cacheKey) as number
     }
 
-    const validSubtractValues = subtractValues.filter(
-      (value) => typeof value === 'number' && !isNaN(value)
-    )
-    const result = validSubtractValues.reduce((acc, value) => {
+    const mergedOptions = this._getMergedOptions(userOptions)
+
+    const result = subtractValues.reduce((acc, value) => {
       return $number(acc, {
         precision: mergedOptions.runtimePrecision,
       }).subtract(value).value
@@ -305,16 +309,33 @@ export class Calculator {
    * @returns
    */
   public calcUnitPrice(
-    calcBaseTotalParams: Partial<CalcBaseTotalParams>,
+    calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
     userOptions?: BaseOptions
-  ): {
-    quantity: number | null
-    unitPrice: number | null
-    linePrice: number | null
-  } {
-    let mergedOptions = this.getOptions()
-    if (typeof userOptions === 'object')
-      mergedOptions = assign(this.getOptions(), userOptions)
+  ): CalcBaseTotalParams {
+    const { quantity, linePrice }: any = calcBaseTotalParams
+    let finalUnitPrice: number = 0
+
+    // 边界1 如果总价和数量都为null，直接返回初始值
+    if (quantity === null && linePrice === null) {
+      return { quantity: null, unitPrice: null, linePrice: null }
+    }
+
+    // 边界2 若确实没有数量，但传有总价，产品希望单价总价一致
+    if (quantity === null) {
+      return { quantity, unitPrice: linePrice, linePrice }
+    }
+
+    // 边界3 总价未传入的情况
+    if (isNumber(quantity) && linePrice === null) {
+      return { quantity, unitPrice: null, linePrice: null }
+    }
+
+    // 边界4 处理分母为0的情况
+    if (quantity === 0 && isNumber(linePrice) && linePrice >= 0) {
+      return { quantity: 0, unitPrice: linePrice, linePrice }
+    }
+
+    const mergedOptions = this._getMergedOptions(userOptions)
     const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
     if (this.calcCache.calcUnitPrice.has(cacheKey)) {
       return this.calcCache.calcUnitPrice.get(cacheKey) as {
@@ -324,33 +345,14 @@ export class Calculator {
       }
     }
 
-    const { quantity, linePrice }: any = calcBaseTotalParams
-    let { unitPrice }: any = calcBaseTotalParams
-
-    // 如果总价和数量都为null，直接返回初始值
-    if (quantity === null && linePrice === null) {
-      return { quantity, unitPrice, linePrice }
-    }
-
-    // 联动逻辑：一般都会有数量，若确实没有数量，当作1来处理，则单价 = 总价
-    if (quantity === null || quantity === 0) {
-      return { quantity, unitPrice: linePrice, linePrice }
-    }
-
-    // 处理分母为0的情况
-    if (quantity === 0) {
-      unitPrice = null
-    }
     // 通用计算逻辑 单价 = 总价 / 数量
-    else {
-      unitPrice = $number(linePrice || 0, {
-        precision: mergedOptions.runtimePrecision,
-      }).divide(quantity).value as number
-    }
+    finalUnitPrice = $number(linePrice || 0, {
+      precision: mergedOptions.runtimePrecision,
+    }).divide(quantity).value as number
 
     const result = {
       quantity,
-      unitPrice: $number(unitPrice as number, {
+      unitPrice: $number(finalUnitPrice as number, {
         precision: mergedOptions.precision,
       }).value,
       linePrice: $number(linePrice as number, {
@@ -367,37 +369,46 @@ export class Calculator {
    * @returns
    */
   public calcLinePrice(
-    calcBaseTotalParams: Partial<CalcBaseTotalParams>,
+    calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'linePrice'>>,
     userOptions?: BaseOptions
   ): CalcBaseTotalParams {
-    let mergedOptions = this.getOptions()
-    if (typeof userOptions === 'object')
-      mergedOptions = assign(this.getOptions(), userOptions)
+    const { quantity, unitPrice }: { quantity: number | null, unitPrice: number | null } = calcBaseTotalParams
+    let finalLinePrice: number = 0
+    // 明确边界处理逻辑，这里统一返回null
+    if (quantity === null && unitPrice === null) {
+      return {
+        quantity: null, unitPrice: null, linePrice: null,
+      }
+    }
+    if (quantity === null && isNumber(unitPrice) && unitPrice >= 0) {
+      return {
+        quantity, unitPrice, linePrice: unitPrice,
+      }
+    }
+    if (isNumber(quantity) && quantity >= 0 && unitPrice === null) {
+      return {
+        quantity, unitPrice: null, linePrice: null,
+      }
+    }
+
+    const mergedOptions = this._getMergedOptions(userOptions)
     const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
     if (this.calcCache.calcLinePrice.has(cacheKey)) {
       return this.calcCache.calcLinePrice.get(cacheKey) as CalcBaseTotalParams
     }
-    const { quantity, unitPrice }: any = calcBaseTotalParams
-    let { linePrice }: any = calcBaseTotalParams
 
-    // 明确边界处理逻辑，这里统一返回null
-    if (quantity === null || unitPrice === null) {
-      return { quantity, unitPrice, linePrice: null }
-    }
     // 通用计算逻辑
-    else {
-      linePrice = $number(quantity, {
-        precision: mergedOptions.runtimePrecision as number,
-      }).multiply(unitPrice).value
-    }
+    finalLinePrice = $number(unitPrice as number, {
+      precision: mergedOptions.runtimePrecision,
+    }).multiply(quantity as number).value
 
     const result = {
       quantity,
       unitPrice: $number(unitPrice as number, {
-        precision: mergedOptions.precision as number,
+        precision: mergedOptions.precision,
       }).value,
-      linePrice: $number(linePrice as number, {
-        precision: mergedOptions.precision as number,
+      linePrice: $number(finalLinePrice, {
+        precision: mergedOptions.precision,
       }).value,
     }
     this.calcCache.calcLinePrice.set(cacheKey, result)
@@ -417,12 +428,13 @@ export class Calculator {
     decimalPlaces?: number,
   ): number | null {
     let cacheKey
-    if (decimalPlaces === null || decimalPlaces === undefined) {
-      cacheKey = this.generateCacheKey({ originPercentage })
+
+    if (decimalPlaces === null || (isNumber(decimalPlaces) && decimalPlaces < 0)) {
+      console.error('参数 decimalPlaces 应为大于 0 的正数')
+      return originPercentage
     }
-    else {
-      cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
-    }
+
+    cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
 
     if (this.calcCache.percentToDecimal.has(cacheKey)) {
       return this.calcCache.percentToDecimal.get(cacheKey) as number | null
@@ -430,21 +442,23 @@ export class Calculator {
     // 边界情况：传 null 默认不处理
     if (originPercentage === null || isNaN(originPercentage)) return null
 
-    const curOptions = this.getOptions()
+    const mergedOptions = this._getMergedOptions({
+      precision: decimalPlaces ?? this.getOptions().precision
+    })
     // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
     // 最终的小数位数是要比传的多两位的
     let handledPrecision
     // 若传代码用户自己控制精度
-    if (typeof decimalPlaces === 'number' && decimalPlaces >= 0) {
+    if (isNumber(decimalPlaces) && decimalPlaces >= 0) {
       handledPrecision = decimalPlaces
     }
     // 没传 默认precision是2，这里为保证转换一致，要加 2
     else {
-      handledPrecision = curOptions.precision + 2
+      handledPrecision = mergedOptions.precision + 2
     }
 
     const result = $number(originPercentage, {
-      precision: curOptions.runtimePrecision + 2,
+      precision: mergedOptions.runtimePrecision + 2,
     }).divide(100).value
     this.calcCache.percentToDecimal.set(cacheKey, result)
 
@@ -461,7 +475,7 @@ export class Calculator {
    */
   public decimalToPercent(
     originDecimal: number | null,
-    decimalPlaces: number = 2
+    decimalPlaces: number = 2,
   ): number | null {
     const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
 
@@ -470,16 +484,14 @@ export class Calculator {
       return cache.get(cacheKey) as number | null;
     }
 
-    const curOptions = this.getOptions()
+    const mergedOptions = this._getMergedOptions({
+      precision: decimalPlaces
+    })
     // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
     // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
-    const precision = decimalPlaces === null
-      ? this.getOptions().runtimePrecision
-      : decimalPlaces
-  
-    const result = $number(originDecimal as number, { precision: curOptions.runtimePrecision }).divide(100).value;
+    const result = $number(originDecimal as number, { precision: mergedOptions.runtimePrecision }).multiply(100).value;
     this.calcCache.percentToDecimal.set(cacheKey, result);
-    return $number(result, { precision: curOptions.precision }).value
+    return $number(result, { precision: mergedOptions.precision }).value
   }
 
   /**
@@ -492,12 +504,11 @@ export class Calculator {
    */
   public calculateDiscountedPrice(
     originalPrice: number | null,
-    discountRate: number | null
+    discountRate: number | null,
+    userOptions?: BaseOptions,
   ): number | null {
     const cacheKey = this.generateCacheKey({ originalPrice, discountRate })
-    if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
-      return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
-    }
+
     // 边界1 输入价格或折扣为null，统一不处理
     if (
       originalPrice === null ||
@@ -507,21 +518,38 @@ export class Calculator {
     ) {
       return null
     }
-    // 边界2 折扣为0，直接返原价
+    // 边界2 若原始价格为负数，不处理直接返原价
+    if (isNumber(originalPrice) && originalPrice <= 0) {
+      console.warn('应确保传入参数 originalPrice 为一个正数')
+      return originalPrice
+    }
+    // 边界3 折扣为0，直接返原价
     if (discountRate === 0) {
       return originalPrice
     }
-    // 边界3 折扣为1，（打满折）最终价为0
+    // 边界4 折扣为1，（打满折）最终价为0
     if (discountRate === 1) {
       return 0
     }
+    // 边界5 折扣率不能为负，直接返原价
+    if (isNumber(discountRate) && discountRate < 0) {
+      console.warn('折扣率 discountRate  应在 [0, 1] 之间')
+      return originalPrice
+    }
 
-    const { runtimePrecision, precision } = this.getOptions()
-    const result = $number(originalPrice, {
-      precision: runtimePrecision,
+    if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
+      return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
+    }
+
+    const mergedOptions = this._getMergedOptions(userOptions)
+    const ratePrice = $number(originalPrice, {
+      precision: mergedOptions.runtimePrecision,
     }).multiply(discountRate).value
-    this.calcCache.calculateDiscountedPrice.set(cacheKey, result)
-    return $number(result, { precision }).value
+    const finalPrice = $number(originalPrice, {
+      precision: mergedOptions.runtimePrecision,
+    }).subtract(ratePrice).value
+    this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
+    return $number(finalPrice, { precision: mergedOptions.precision }).value
   }
 
   /**
@@ -534,22 +562,28 @@ export class Calculator {
   public computeRate(
     originPrice: number,
     userRate?: number,
-    userRateType?: RateType
+    userRateType?: RateType,
+    userOptions?: BaseOptions,
   ): number {
     const cacheKey = this.generateCacheKey({
       originPrice,
       userRate,
       userRateType,
     })
+
+    let finalRatePrice: number = 0
+    if (originPrice === null || (isNumber(userRate) && userRate < 0)) {
+      return finalRatePrice
+    }
+    // 边界1 没有原价，或为0，要保证计算出来为Number 所以取0
+    if (originPrice === null || originPrice === 0) return finalRatePrice
+
     if (this.calcCache.computeRate.has(cacheKey)) {
       return this.calcCache.computeRate.get(cacheKey) as number
     }
 
-    let finalRatePrice = 0
-    // 边界1 没有原价，或为0，要保证计算出来为Number 所以取0
-    if (originPrice === null || originPrice === 0) return finalRatePrice
 
-    const curOptions = this.getOptions()
+    const curOptions = this._getMergedOptions(userOptions)
     const rate = (userRate !== null ? userRate : curOptions.taxRate) as number
     const rateType = userRateType != null ? userRateType : curOptions.rateType
 
@@ -563,14 +597,12 @@ export class Calculator {
           .divide(addedRate)
           .multiply(rate).value,
       excl_gst: (price) =>
-        $number(price, { precision: curOptions.runtimePrecision }).multiply(
-          rate
-        ).value,
+        $number(price, { precision: curOptions.runtimePrecision }).multiply(rate).value,
     }
     // 添加默认处理，防止访问不存在的键
     const calculator = rateCalculators[rateType as RateType]
     if (!calculator) {
-      console.warn(`Invalid rateType: ${rateType}`)
+      console.error(`Invalid rate type: ${rateType}`)
       return finalRatePrice
     }
     finalRatePrice = calculator(originPrice)

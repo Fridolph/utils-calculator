@@ -1,6 +1,13 @@
 import { CalcInst, Calculator } from '../main'
 
 describe('computeRate()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should compute rate correctly with valid inputs', () => {
     // 简单有效输入示例
     expect(CalcInst.computeRate(10, 50)).toBe(0.2)

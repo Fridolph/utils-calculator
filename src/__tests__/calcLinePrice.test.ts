@@ -1,6 +1,13 @@
 import { CalcInst, Calculator } from '../main'
 
 describe('calcLinePrice()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should calculate line price correctly with valid inputs', () => {
     // 正常计算场景
     expect(CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 })).toEqual({
@@ -31,7 +38,7 @@ describe('calcLinePrice()', () => {
     expect(CalcInst.calcLinePrice({ quantity: null, unitPrice: 10 })).toEqual({
       quantity: null,
       unitPrice: 10,
-      linePrice: null,
+      linePrice: 10,
     })
 
     // unitPrice为null时返回null
@@ -85,25 +92,25 @@ describe('calcLinePrice()', () => {
     })
   })
 
-  // it('should utilize cache mechanism correctly', () => {
-  //   const cacheKeySpy = jest.spyOn(CalcInst as any, 'generateCacheKey')
-  //   const input = { quantity: 5, unitPrice: 20 } as CalcBaseTotalParams
+  it('should utilize cache mechanism correctly', () => {
+    const cacheKeySpy = jest.spyOn(CalcInst as any, 'generateCacheKey')
+    const input = { quantity: 5, unitPrice: 20 } as CalcBaseTotalParams
 
-  //   // 第一次调用生成缓存
-  //   CalcInst.calcLinePrice(input)
-  //   // 第二次相同输入应命中缓存
-  //   CalcInst.calcLinePrice(input)
+    // 第一次调用生成缓存
+    CalcInst.calcLinePrice(input)
+    // 第二次相同输入应命中缓存
+    CalcInst.calcLinePrice(input)
 
-  //   // 验证generateCacheKey调用次数
-  //   // expect(cacheKeySpy).toHaveBeenCalledTimes(1)
+    // 验证generateCacheKey调用次数
+    // expect(cacheKeySpy).toHaveBeenCalledTimes(1)
 
-  //   // 验证缓存存储正确性
-  //   const cache = CalcInst.getCache('calcLinePrice')
-  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
-  //   expect(cache.has(cacheKey)).toBe(true)
+    // 验证缓存存储正确性
+    const cache = CalcInst.getCache('calcLinePrice')
+    const cacheKey = cacheKeySpy.mock.results[0]?.value
+    expect(cache.has(cacheKey)).toBe(true)
 
-  //   cacheKeySpy.mockRestore()
-  // })
+    cacheKeySpy.mockRestore()
+  })
 
   it('should respect custom precision configuration', () => {
     // 测试自定义精度对计算结果的影响
@@ -120,7 +127,7 @@ describe('calcLinePrice()', () => {
     expect(CalcInst.calcLinePrice({ quantity: 2, unitPrice: 2.34567 })).toEqual(
       {
         quantity: 2,
-        unitPrice: 2.34567,
+        unitPrice: 2.3457,
         linePrice: 4.6913, // 2 * 2.34567 = 4.69134 → 保留4位后四舍五入为4.6913
       }
     )

@@ -1,6 +1,13 @@
 import { CalcInst, Calculator } from '../main'
 
 describe('calculateDiscountedPrice()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should calculate discounted price correctly with valid inputs', () => {
     // 正常折扣计算场景
     expect(CalcInst.calculateDiscountedPrice(100, 0.2)).toBe(80)
@@ -12,14 +19,14 @@ describe('calculateDiscountedPrice()', () => {
 
   it('should handle negative original price', () => {
     // 原始价格为负数的情况
-    expect(CalcInst.calculateDiscountedPrice(-100, 0.2)).toBe(-80)
-    expect(CalcInst.calculateDiscountedPrice(-50, 0.5)).toBe(-25)
+    expect(CalcInst.calculateDiscountedPrice(-100, 0.2)).toBe(-100)
+    expect(CalcInst.calculateDiscountedPrice(-50, 0.5)).toBe(-50)
   })
 
   it('should handle negative discount rate', () => {
     // 折扣率为负数的情况
-    expect(CalcInst.calculateDiscountedPrice(100, -0.2)).toBe(120)
-    expect(CalcInst.calculateDiscountedPrice(50, -0.5)).toBe(75)
+    expect(CalcInst.calculateDiscountedPrice(100, -0.2)).toBe(100)
+    expect(CalcInst.calculateDiscountedPrice(50, -0.5)).toBe(50)
   })
 
   it('should return null for invalid inputs', () => {
@@ -39,24 +46,17 @@ describe('calculateDiscountedPrice()', () => {
     ).toBeNull()
   })
 
-  // it('should utilize cache mechanism correctly', () => {
-  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-  //   const originalPrice = 100
-  //   const discountRate = 0.2
+  it('should utilize cache mechanism correctly', () => {
+    CalcInst.clearCache('calculateDiscountedPrice')
+    const originalPrice = 100
+    const discountRate = 0.2
 
-  //   // 第一次调用生成缓存
-  //   CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
-  //   // 第二次相同输入应命中缓存
-  //   CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
+    // 第一次调用生成缓存
+    CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
+    // 第二次相同输入应命中缓存，所以只计算 1 次
+    CalcInst.calculateDiscountedPrice(originalPrice, discountRate)
 
-  //   // 验证generateCacheKey调用次数
-  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
-
-  //   // 验证缓存存储正确性
-  //   const cache = CalcInst.getCache('calculateDiscountedPrice')
-  //   const cacheKey = cacheKeySpy.mock.results[0]?.value
-  //   expect(cache.has(cacheKey)).toBe(true)
-
-  //   cacheKeySpy.mockRestore()
-  // })
+    // 验证generateCacheKey调用次数
+    expect(CalcInst.queryCacheStat().calculateDiscountedPrice).toBe(1)
+  })
 })

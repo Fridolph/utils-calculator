@@ -1,6 +1,13 @@
 import { CalcInst, Calculator } from '../main'
 
 describe('decimalToPercent()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should convert valid decimals to percentages correctly', () => {
     // 正常转换场景
     expect(CalcInst.decimalToPercent(0.5)).toEqual(50)

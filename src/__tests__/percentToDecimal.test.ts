@@ -1,6 +1,13 @@
 import { CalcInst, Calculator } from '../main'
 
 describe('percentToDecimal()', () => {
+  beforeEach(() => {
+    CalcInst.clearCache()
+    CalcInst.setOption('precision', 2)
+    CalcInst.setOption('taxRate', 0.1)
+    CalcInst.setOption('rateType', 'incl_gst')
+  })
+
   it('should convert percentage to decimal correctly with default decimal places', () => {
     // 标准转换（默认保留2位小数 → 实际保留4位）
     expect(CalcInst.percentToDecimal(50.56)).toBe(0.5056)
@@ -66,9 +73,9 @@ describe('percentToDecimal()', () => {
 
   it('should handle edge cases for decimalPlaces', () => {
     // decimalPlaces为null时使用全局配置
-    expect(CalcInst.percentToDecimal(33.333333, null as any)).toBe(0.3333)
+    expect(CalcInst.percentToDecimal(33.333333, null as any)).toBe(33.333333) // 传值不规范返原值
 
     // decimalPlaces为负数的处理（特殊场景）
-    expect(CalcInst.percentToDecimal(123.4567, -1)).toBe(1.2346) // 1.234567 -> 1.2346 按默认的4位来
+    expect(CalcInst.percentToDecimal(123.4567, -1)).toBe(123.4567) // 传值不规范返原值
   })
 })
