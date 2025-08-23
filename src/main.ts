@@ -1,8 +1,5 @@
 import { $number } from './utils'
-import {
-  isNumber, isObject,
-  assign, clone,
-} from 'radash'
+import { isNumber, isObject } from './utils'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -270,12 +267,14 @@ export class Calculator {
    */
   public subtractMultiple(
     initialValue: number,
-    subtractValues: number[],
+    subtractValues: number[] | number,
     userOptions?: BaseOptions
   ): number | null {
     // 如果第二个参数是数字，转换为数组
-    const valueArray: number[] =
-      isNumber(subtractValues) ? [subtractValues] : subtractValues
+    const mergedOptions = this._getMergedOptions(userOptions)
+    subtractValues = isNumber(subtractValues) 
+      ? [subtractValues] as number[]
+      : subtractValues as number[]
 
     if (!isNumber(initialValue)) {
       console.error('被减数应为 Number 类型，请处理好参数类型再计算')
@@ -290,8 +289,6 @@ export class Calculator {
     if (this.calcCache.subtractMultiple.has(cacheKey)) {
       return this.calcCache.subtractMultiple.get(cacheKey) as number
     }
-
-    const mergedOptions = this._getMergedOptions(userOptions)
 
     const result = subtractValues.reduce((acc, value) => {
       return $number(acc, {
