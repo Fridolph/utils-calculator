@@ -272,7 +272,7 @@ export class Calculator {
   ): number | null {
     // 如果第二个参数是数字，转换为数组
     const mergedOptions = this._getMergedOptions(userOptions)
-    subtractValues = isNumber(subtractValues) 
+    subtractValues = isNumber(subtractValues)
       ? [subtractValues] as number[]
       : subtractValues as number[]
 
@@ -569,7 +569,7 @@ export class Calculator {
     }
     if (!isNumber(userRate) || userRate < 0 || userRate > 1) {
       console.error('折扣率参数错误，userRate 应为 [0, 1] 的小数')
-      return originPrice
+      return isNumber(originPrice) ? originPrice : 0
     }
 
     const curOptions = this._getMergedOptions(userOptions)

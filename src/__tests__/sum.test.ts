@@ -63,22 +63,37 @@ describe('sum()', () => {
     expect(CalcInst.sum([1.1111, 2.2222])).toBe(3.3333)  // 无四舍五入
     expect(CalcInst.sum([1.11111, 2.22222])).toBe(3.3333)  // 保留4位后为3.3333
     CalcInst.setOption('precision', 2) // 恢复默认值
-  });
+  })
 
-  // it('should utilize cache mechanism', () => {
-  //   // 测试缓存命中情况
-  //   const cacheKeySpy = jest.spyOn((CalcInst) as any, 'generateCacheKey')
-  //   const input = [1, 2, 3]
+  it('should utilize cache mechanism correctly', () => {
+    CalcInst.clearCache('all')
+    const numerator = 10
+    const denominator = 0.6
 
-  //   // 第一次调用生成缓存
-  //   CalcInst.sum(input)
-  //   // 第二次相同输入应命中缓存
-  //   CalcInst.sum(input)
+    // 第一次调用生成缓存
+    CalcInst.sum([1,2,3,4,5])
+    // 第二次相同输入应命中缓存
+    CalcInst.sum([1,2,3,4,5])
+    // 验证generateCacheKey调用次数
+    expect(CalcInst.getCache().sum.size).toBe(1)
 
-  //   // 验证generateCacheKey只调用一次（缓存命中）
-  //   expect(cacheKeySpy).toHaveBeenCalledTimes(1)
-
-  //   // 清理mock
-  //   cacheKeySpy.mockRestore()
-  // })
+    CalcInst.sum({
+      a: 1,
+      b: 2,
+      c: 3,
+      d: 4,
+      e: 5,
+      f: 6,
+    })
+    CalcInst.sum({
+      a: 1,
+      b: 2,
+      c: 3,
+      d: 4,
+      e: 5,
+      f: 6,
+    })
+    // 结合上面的应该计算了 4 次，由于优化了缓存，只计算 2 次
+    expect(CalcInst.getCache().sum.size).toBe(2)
+  })
 })
