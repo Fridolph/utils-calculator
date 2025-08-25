@@ -1,0 +1,19 @@
+{
+  "entryPoints": ["src/main.ts"],
+  "out": "docs/api",
+  "theme": "markdown",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "readme": "README.md",
+  "hideGenerator": true,
+  "tsconfig": "tsconfig.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "disableSources": true,
+  "exclude": [
+    "**/__tests__/**/*",
+    "**/*.d.ts",
+    "src/index.ts",
+    "src/utils.ts"
+  ]
+}

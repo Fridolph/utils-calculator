@@ -1,3 +1,7 @@
+**utils-calculator**
+
+***
+
 # utils-calculator 🧮
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/yourname/yourrepo)

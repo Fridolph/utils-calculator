@@ -5,7 +5,8 @@
   "scripts": {
     "build": "npx tsc",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "docs": "typedoc"
   },
   "keywords": [
     "calculator",
@@ -16,8 +17,7 @@
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {
     "babel-jest": "^30.0.5",
-    "currency.js": "^2.0.4",
-    "radash": "^12.1.1"
+    "currency.js": "^2.0.4"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
@@ -25,6 +25,8 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
+    "typedoc": "^0.28.11",
+    "typedoc-plugin-markdown": "^4.8.1",
     "typescript": "^5.9.2"
   }
 }
