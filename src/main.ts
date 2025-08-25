@@ -268,36 +268,36 @@ export class Calculator {
   public subtractMultiple(
     initialValue: number,
     subtractValues: number[] | number,
-    userOptions?: BaseOptions
-  ): number | null {
-    // 如果第二个参数是数字，转换为数组
+    userOptions?: Partial<BaseOptions>
+  ): number {
+    // 参数预处理
+    if (!Array.isArray(subtractValues)) {
+      subtractValues = [subtractValues] as number[]
+    }
+
+    if (!isNumber(initialValue) || isNaN(initialValue)) {
+      console.error('被减数应为 Number 类型, 这里一律处理为 0 继续计算')
+      initialValue = 0
+    }
+    // 强制过滤非数字项 -> 即当成 0 来处理
+    // 注：'123' 字符串数字 也当作非法值，否则有歧义。使用者必须确保传入安全的 Number 类型
+    subtractValues = subtractValues.filter((v: unknown) => isNumber(v))
+
     const mergedOptions = this._getMergedOptions(userOptions)
-    subtractValues = isNumber(subtractValues)
-      ? [subtractValues] as number[]
-      : subtractValues as number[]
-
-    if (!isNumber(initialValue)) {
-      console.error('被减数应为 Number 类型，请处理好参数类型再计算')
-      return initialValue
-    }
-    if (subtractValues.some(v => !isNumber(v))) {
-      console.error('待减项应为 Number 类型，请处理好参数类型再计算')
-      return initialValue
-    }
-
     const cacheKey = this.generateCacheKey({ initialValue, subtractValues })
     if (this.calcCache.subtractMultiple.has(cacheKey)) {
       return this.calcCache.subtractMultiple.get(cacheKey) as number
     }
 
     const result = subtractValues.reduce((acc, value) => {
-      return $number(acc, {
-        precision: mergedOptions.runtimePrecision,
-      }).subtract(value).value
-    }, $number(initialValue, { precision: mergedOptions.runtimePrecision }).value)
-    this.calcCache.subtractMultiple.set(cacheKey, result)
+      const curValue = $number(acc, { precision: mergedOptions.runtimePrecision }).subtract(value).value
+      return curValue
+    }, initialValue)
 
-    return $number(result, { precision: mergedOptions.precision }).value
+    const finalResult = $number(result, { precision: mergedOptions.precision }).value
+    this.calcCache.subtractMultiple.set(cacheKey, finalResult)
+
+    return finalResult
   }
 
   /**
@@ -473,12 +473,30 @@ export class Calculator {
   public decimalToPercent(
     originDecimal: number | null,
     decimalPlaces: number = 2,
-  ): number | null {
-    const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
+  ): number {
+    // 优先处理边界，不使用缓存
+    if (originDecimal === null || originDecimal === 0 || decimalPlaces === null || isNaN(originDecimal)) return 0
+    if (!isNumber(decimalPlaces) || isNaN(decimalPlaces)) {
+      console.error('参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字')
+      return 0
+    }
+    if (decimalPlaces < 0) {
+      console.error('参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前小于0 当作0来处理')
+      decimalPlaces = 0
+    }
+    else if (decimalPlaces > 8) {
+      console.error('参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理')
+      decimalPlaces = 8
+    }
+    else if (isNaN(decimalPlaces)) {
+      console.error('参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理')
+      decimalPlaces = 2
+    }
 
+    const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
     const cache = this.getCache('percentToDecimal')
     if (cache.has(cacheKey)) {
-      return cache.get(cacheKey) as number | null;
+      return cache.get(cacheKey) as number;
     }
 
     const mergedOptions = this._getMergedOptions({
@@ -487,7 +505,7 @@ export class Calculator {
     // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
     // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
     const result = $number(originDecimal as number, { precision: mergedOptions.runtimePrecision }).multiply(100).value;
-    this.calcCache.percentToDecimal.set(cacheKey, result);
+    this.calcCache.decimalToPercent.set(cacheKey, result);
     return $number(result, { precision: mergedOptions.precision }).value
   }
 

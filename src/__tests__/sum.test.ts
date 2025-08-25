@@ -67,8 +67,6 @@ describe('sum()', () => {
 
   it('should utilize cache mechanism correctly', () => {
     CalcInst.clearCache('all')
-    const numerator = 10
-    const denominator = 0.6
 
     // 第一次调用生成缓存
     CalcInst.sum([1,2,3,4,5])
