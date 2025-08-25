@@ -18,7 +18,7 @@ import { isNumber, isObject } from './utils'
  */
 const defaultBaseOptions: BaseOptions = {
   precision: 2, // 最高支持8位小数
-  runtimePrecision: 8, // 不可修改
+  runtimePrecision: 10, // 不可修改
   taxRate: 0.1, // 折扣率 - 理解为 打九折
   rateType: 'incl_gst', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 incl_gst
 }

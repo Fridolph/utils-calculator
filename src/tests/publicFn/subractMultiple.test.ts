@@ -1,4 +1,4 @@
-import { CalcInst } from '../main'
+import { CalcInst } from '../../main'
 
 // ----------------- 减法测试模板 -----------------
 describe('subtractMultiple()', () => {

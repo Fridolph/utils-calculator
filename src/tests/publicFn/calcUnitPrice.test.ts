@@ -1,4 +1,4 @@
-import { CalcInst, Calculator } from '../main'
+import { CalcInst, Calculator } from '../../main'
 
 // ----------------- 单价/总价计算测试模板 -----------------
 

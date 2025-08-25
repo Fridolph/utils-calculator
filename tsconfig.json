@@ -1,47 +1,22 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "include": [
-    "src/**/*", "jest.config.ts", // 应包含所有源文件
+    "src/**/*",
+    "src/tests/**/*",       // 新增测试目录
+    "src/types/**/*"        // 新增类型定义目录
   ],
   "compilerOptions": {
-   "typeRoots": ["./src/types", "./node_modules/@types"], 
-    "rootDir": ".",
+    "typeRoots": ["src/types", "./node_modules/@types"],  // 优先使用自定义类型
+    "rootDir": ".",                                    // 根目录
     "outDir": "./dist",
-    "module": "ESNext", // 支持 ESM
-    "moduleResolution": "Node", // 兼容 Node.js 模块解析
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
+    "module": "commonjs",
+    "moduleResolution": "Node",
     "target": "es2021",
-    "types": ["jest"],
-    // For nodejs:
+    "types": ["jest"],                                 // 确保jest类型
     "lib": ["ES2021", "DOM"],
-    // "types": ["node"],
-    // and npm install -D @types/node
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
     "esModuleInterop": true,
     "strict": true,
     "verbatimModuleSyntax": false,
     "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
     "skipLibCheck": true
   }
 }

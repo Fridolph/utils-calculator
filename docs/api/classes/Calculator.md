@@ -63,7 +63,7 @@ CalcInst.percentToDecimal(55.66, 4) // 0.5566
 
 ##### runtimePrecision
 
-> **runtimePrecision**: `8` = `curOptions.runtimePrecision`
+> **runtimePrecision**: `10` = `curOptions.runtimePrecision`
 
 ##### taxRate
 
@@ -1367,7 +1367,6 @@ expect(CalcInst.getCache().sum.size).toBe(cacheSize + 1)
 const calc1 = Calculator.getInstance();
 const calc2 = Calculator.getInstance();
 expect(calc1).toBe(calc2); // 严格相等验证
-```
 
 // 单例模式与静态实例的等价性
 expect(CalcInst).toBe(Calculator.getInstance());

@@ -1,4 +1,4 @@
-import { CalcInst, Calculator } from '../main'
+import { CalcInst } from '../../main'
 
 // ----------------- 基础方法测试模板 -----------------
 describe('sum()', () => {

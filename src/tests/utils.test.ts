@@ -1,4 +1,5 @@
-import { CalcInst, Calculator } from '../main'
+// 验证工具方法
+import { CalcInst } from '../main'
 
 describe('Calculator Utility Methods', () => {
   // 测试 setOptions 方法
@@ -52,5 +53,57 @@ describe('Calculator Utility Methods', () => {
     const data = { key: 'value' }
     const cacheKey = CalcInst.generateCacheKey(data)
     expect(cacheKey).toBe(JSON.stringify(data))
+  })
+})
+
+describe('Type Definitions', () => {
+  it('should validate BaseOptions', () => {
+    const options: BaseOptions = {
+      precision: 2,
+      runtimePrecision: 10,
+      taxRate: 0.1,
+      rateType: 'incl_gst'
+    }
+    
+    // 验证类型定义
+    expect(typeof options.precision).toBe('number')
+    expect(options.runtimePrecision).toBe(10)
+    expect(['incl_gst', 'excl_gst', 'gst_free']).toContain(options.rateType)
+  })
+
+  it('should handle RateType boundaries', () => {
+    // 验证类型守卫
+    const validTypes: RateType[] = ['incl_gst', 'excl_gst', 'gst_free']
+    validTypes.forEach(type => {
+      expect(['incl_gst', 'excl_gst', 'gst_free']).toContain(type)
+    })
+  })
+})
+
+describe('Precision Handling', () => {
+  // 1. 验证8位精度计算
+  it('should handle 8-digit precision', () => {
+    CalcInst.setOption('precision', 8)
+    const result = CalcInst.sum([0.00000001, 0.00000002])
+    expect(result).toBe(0.00000003)
+  })
+
+  // 2. 验证精度四舍五入
+  it('should round correctly at different precisions', () => {
+    // 精度0（整数）
+    CalcInst.setOption('precision', 0)
+    expect(CalcInst.sum([1.49])).toBe(1)
+    expect(CalcInst.sum([1.5])).toBe(2)
+    
+    // 精度8的边界
+    CalcInst.setOption('precision', 8)
+    expect(CalcInst.sum([0.000000005])).toBe(0.00000001)
+  })
+
+  // 3. 验证运行时精度
+  it('should use runtimePrecision for intermediate calculations', () => {
+    CalcInst.setOption('precision', 2)
+    const result = CalcInst.sum([0.000000001, 0.000000002])
+    expect(result).toBe(0)  // 运行时使用8位精度，最终结果保留2位
   })
 })

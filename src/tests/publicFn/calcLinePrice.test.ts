@@ -1,4 +1,4 @@
-import { CalcInst, Calculator } from '../main'
+import { CalcInst, Calculator } from '../../main'
 
 describe('calcLinePrice()', () => {
   beforeEach(() => {
