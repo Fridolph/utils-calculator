@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master] # 只监听 master 分支，避免与 main 重复
+    branches: [main] # 改为监听 main 分支
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   test:
@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['20'] # 使用一致的 Node 版本
+        node-version: ['20']
 
     steps:
       - uses: actions/checkout@v4

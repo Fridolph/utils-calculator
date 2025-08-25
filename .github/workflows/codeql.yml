@@ -2,9 +2,9 @@ name: 'CodeQL'
 
 on:
   push:
-    branches: ['master'] # 只监听 master 分支
+    branches: ['main'] # 只监听 main 分支
   pull_request:
-    branches: ['main'] # PR 时监听 main 分支
+    branches: ['main']
   schedule:
     - cron: '30 1 * * 0'
 
