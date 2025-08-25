@@ -4,9 +4,9 @@
 
 # utils-calculator 🧮
 
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/yourname/yourrepo)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/Fridolph/yourrepo)
 [![npm version](https://img.shields.io/npm/v/utils-calculator)](https://www.npmjs.com/package/utils-calculator)
-[![License](https://img.shields.io/npm/l/utils-calculator)](https://github.com/yourname/yourrepo/blob/main/LICENSE)
+[![License](https://img.shields.io/npm/l/utils-calculator)](https://github.com/Fridolph/yourrepo/blob/main/LICENSE)
 
 基于TypeScript的高性能计算工具库，提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景。
 

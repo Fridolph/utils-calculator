@@ -1,6 +1,6 @@
 {
   "name": "utils-calculator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "build": "npx tsc",
@@ -10,9 +10,12 @@
   },
   "keywords": [
     "calculator",
-    "cache"
+    "cache",
+    "decimal",
+    "precision",
+    "currency"
   ],
-  "author": "fridolph",
+  "author": "Fridolph",
   "license": "ISC",
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {

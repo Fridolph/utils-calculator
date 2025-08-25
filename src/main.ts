@@ -357,7 +357,7 @@ export class Calculator {
    * @param data
    * @returns
    */
-  private generateCacheKey(data: unknown): string {
+  public generateCacheKey(data: unknown): string {
     return JSON.stringify(data)
   }
 
