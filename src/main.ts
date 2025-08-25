@@ -1370,7 +1370,7 @@ export class Calculator {
    * - 正常数值：如 100 元
    *
    * @param userRate - 税率值（0-1之间的小数），支持以下处理：
-   * - null：使用全局taxRate配置
+   * - null/undefined：使用全局taxRate配置
    * - NaN：返回原始价格
    * - 负值：强制转为0
    * - 默认值：0.1（对应默认配置）
@@ -1395,6 +1395,8 @@ export class Calculator {
    * CalcInst.computeRate(25, 0.1, 'excl_gst') // 2.5（25*0.1）
    * // 免税场景
    * CalcInst.computeRate(100, 0.1, 'gst_free') // 0
+   * // 使用全局配置
+   * CalcInst.computeRate(100) // 根据全局taxRate和rateType计算
    * ```
    *
    * @performance
@@ -1404,9 +1406,9 @@ export class Calculator {
    * @errorHandling
    * 自动处理以下异常情况：
    * - originPrice为null/0：返回0
-   * - userRate为null/NaN：使用全局taxRate配置
-   * - userRateType无效：返回0
-   * - userRate超出[0,1]范围：返回原始价格
+   * - userRate为NaN：使用全局taxRate配置
+   * - userRate超出[0,1]范围：使用全局taxRate配置
+   * - userRateType无效：使用全局rateType配置
    *
    * @caching
    * 缓存键生成策略：
@@ -1436,6 +1438,8 @@ export class Calculator {
    * expect(CalcInst.computeRate(-10, 50)).toBe(-10)
    * // 无效参数处理
    * expect(CalcInst.computeRate(10, 'invalid' as any)).toBe(10)
+   * // 使用全局配置
+   * expect(CalcInst.computeRate(100)).toBe(10) // 假设全局taxRate=0.1, rateType='excl_gst'
    * // 缓存验证
    * const cacheSize = CalcInst.getCache().computeRate.size
    * CalcInst.computeRate(10, 0.6)
@@ -1452,27 +1456,46 @@ export class Calculator {
     if (originPrice === null || originPrice === 0) {
       return 0
     }
-    if (!isNumber(userRate) || userRate < 0 || userRate > 1) {
-      console.error('折扣率参数错误，userRate 应为 [0, 1] 的小数')
-      return isNumber(originPrice) ? originPrice : 0
-    }
 
     const curOptions = this._getMergedOptions(userOptions)
-    const curRate = userRate ?? curOptions.taxRate
-    const curRateType = userRateType ?? curOptions.rateType
+    // 处理 userRate，如果未提供则使用全局配置
+    let curRate: number
+    if (userRate === undefined) {
+      curRate = curOptions.taxRate
+    } else if (userRate === null || isNaN(userRate)) {
+      curRate = curOptions.taxRate
+    } else if (userRate < 0 || userRate > 1) {
+      console.warn('userRate 应为 [0, 1] 的小数，使用全局taxRate配置')
+      curRate = curOptions.taxRate
+    } else {
+      curRate = userRate
+    }
+
+    // 处理 userRateType，如果未提供则使用全局配置
+    let curRateType: RateType
+    if (userRateType === undefined) {
+      curRateType = curOptions.rateType
+    } else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
+      console.warn(`Invalid rate type: ${userRateType}，使用全局rateType配置`)
+      curRateType = curOptions.rateType
+    } else {
+      curRateType = userRateType
+    }
 
     const cacheKey = this.generateCacheKey({
       originPrice,
       userRate: curRate,
       userRateType: curRateType,
     })
+
     if (this.calcCache.computeRate.has(cacheKey)) {
       return this.calcCache.computeRate.get(cacheKey) as number
     }
 
-    const addedRate = $number(1, {
-      precision: curOptions.runtimePrecision,
-    }).add(curRate).value
+    const addedRate = $number(1, { precision: curOptions.runtimePrecision }).add(
+      curRate
+    ).value
+
     const rateCalculators: { [key in RateType]: (price: number) => number } = {
       gst_free: () => 0,
       incl_gst: (price) =>
@@ -1487,11 +1510,13 @@ export class Calculator {
     const calculator = rateCalculators[curRateType as RateType]
     if (!calculator) {
       console.error(`Invalid rate type: ${curRateType}`)
-      return finalRatePrice
+      return originPrice
     }
-    finalRatePrice = calculator(originPrice)
+    finalRatePrice = $number(calculator(originPrice), {
+      precision: curOptions.precision,
+    }).value
     this.calcCache.computeRate.set(cacheKey, finalRatePrice)
-    return $number(finalRatePrice, { precision: curOptions.precision }).value
+    return finalRatePrice
   }
 }
 
