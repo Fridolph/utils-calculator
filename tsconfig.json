@@ -4,8 +4,9 @@
     "src/tests/**/*",       // 新增测试目录
     "src/__tests__/**/*",        // 添加 __tests__ 目录
     "src/tests/**/*",           // 保留原有 tests 目录
-    "src/types/**/*"
-, "index.js"  ],
+    "src/types/**/*",
+    "index.js"
+  ],
   "compilerOptions": {
     "typeRoots": ["src/types", "./node_modules/@types"],  // 优先使用自定义类型
     "rootDir": ".",                                    // 根目录

@@ -1,13 +1,21 @@
 {
   "name": "utils-calculator",
-  "version": "1.1.0",
-  "main": "index.js",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build": "npx tsc",
     "test": "jest",
     "test:watch": "jest --watch",
     "coverage": "jest --coverage",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "prepublishOnly": "npm run build",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major"
   },
   "keywords": [
     "calculator",
@@ -29,6 +37,7 @@
     "babel-jest": "^30.0.5",
     "jest": "^30.0.5",
     "nyc": "^17.1.0",
+    "standard-version": "^9.5.0",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typedoc": "^0.28.11",

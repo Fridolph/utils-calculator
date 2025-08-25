@@ -9,10 +9,9 @@ export default {
     '<rootDir>/src/tests/**/*.ts', // 确保原来的 tests 目录也被包含
   ],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-  collectCoverage: false,
-  // collectCoverage: true,
-  // coverageReporters: ['text', 'lcov'],
-  // coverageDirectory: 'coverage',
+  collectCoverage: true,
+  coverageReporters: ['text', 'lcov'],
+  coverageDirectory: 'coverage',
   transform: {
     '\\.[jt]sx?$': [
       'ts-jest',
