@@ -19,16 +19,17 @@ describe('Cache Mechanism', () => {
   })
 
   // 2. 验证多级缓存
-  // it('should handle multiple cache types', () => {
-  //   // 设置不同缓存项
-  //   CalcInst.sum([1,2])
-  //   CalcInst.subtractMultiple(10, [3])
+  it('should handle multiple cache types', () => {
+    // 设置不同缓存项
+    CalcInst.sum([1, 2])
+    CalcInst.subtractMultiple(10, [1, 2])
 
-  //   // 验证统计
-  //   const stats = CalcInst.queryCacheStat('all')
-  //   expect(stats.sum).toBe(1)
-  //   expect(stats.subtractMultiple).toBe(1)
-  // })
+    // 验证统计
+    const stats = CalcInst.queryCacheStat()
+    expect(stats.sum).toBe(1)
+    expect(stats.subtractMultiple).toBe(1)
+    expect(stats.all).toBe(2)
+  })
 
   // 3. 验证缓存清理
   // it('should clear cache correctly', () => {

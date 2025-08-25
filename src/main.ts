@@ -320,6 +320,7 @@ export class Calculator {
   public queryCacheStat(cacheType: CacheType = 'all') {
     const cacheGroups = {
       sum: this.calcCache.sum,
+      subtractMultiple: this.calcCache.subtractMultiple,
       calcUnitPrice: this.calcCache.calcUnitPrice,
       calcLinePrice: this.calcCache.calcLinePrice,
       percentToDecimal: this.calcCache.percentToDecimal,
@@ -477,7 +478,6 @@ export class Calculator {
     userOptions?: Partial<BaseOptions>
   ): number {
     const mergedOptions = this._getMergedOptions(userOptions)
-
     const cacheKey = this.generateCacheKey({ data, mergedOptions })
     if (this.calcCache.sum.has(cacheKey)) {
       return this.calcCache.sum.get(cacheKey) as number
@@ -498,16 +498,14 @@ export class Calculator {
 
     if (numbersToSum.length > 0) {
       const sumResult = numbersToSum.reduce((acc: number, num: number) => {
-        const tempTotal = $number(acc, { precision: mergedOptions.runtimePrecision }).add(
-          num
-        ).value
-        return tempTotal
+        return $number(acc, { precision: mergedOptions.runtimePrecision }).add(num).value
       }, 0)
       total = sumResult
     }
 
-    this.calcCache.sum.set(cacheKey, total)
-    return $number(total, { precision: mergedOptions.precision }).value
+    const finalTotal = $number(total, { precision: mergedOptions.precision }).value
+    this.calcCache.sum.set(cacheKey, finalTotal)
+    return finalTotal
   }
 
   /**
@@ -617,20 +615,31 @@ export class Calculator {
     }
     // 强制过滤非数字项 -> 即当成 0 来处理
     // 注：'123' 字符串数字 也当作非法值，否则有歧义。使用者必须确保传入安全的 Number 类型
-    subtractValues = subtractValues.filter((v: unknown) => isNumber(v))
+    const filteredSubtractValues = subtractValues.filter((v: unknown) => isNumber(v))
 
     const mergedOptions = this._getMergedOptions(userOptions)
-    const cacheKey = this.generateCacheKey({ initialValue, subtractValues })
+
+    /**
+     * @remarks fix [issues-2](https://github.com/Fridolph/utils-calculator/issues/2)
+     * 修改后：缓存键保持不变，但更明确地包含userOptions
+     */
+    const cacheKey = this.generateCacheKey({
+      initialValue,
+      subtractValue: filteredSubtractValues,
+      userOptions,
+    })
+
     if (this.calcCache.subtractMultiple.has(cacheKey)) {
       return this.calcCache.subtractMultiple.get(cacheKey) as number
     }
 
-    const result = subtractValues.reduce((acc, value) => {
-      const curValue = $number(acc, {
-        precision: mergedOptions.runtimePrecision,
-      }).subtract(value).value
-      return curValue
-    }, initialValue)
+    // 复用 sum 方法计算减数总和，这样可以生成 sum 缓存项
+    // 不传递userOptions给sum方法，确保sum方法使用全局配置，避免创建额外的缓存项
+    const totalToSubtract = this.sum(filteredSubtractValues)
+
+    const result = $number(initialValue, {
+      precision: mergedOptions.runtimePrecision,
+    }).subtract(totalToSubtract).value
 
     const finalResult = $number(result, { precision: mergedOptions.precision }).value
     this.calcCache.subtractMultiple.set(cacheKey, finalResult)
