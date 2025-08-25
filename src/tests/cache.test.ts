@@ -32,13 +32,14 @@ describe('Cache Mechanism', () => {
   })
 
   // 3. 验证缓存清理
-  // it('should clear cache correctly', () => {
-  //   // 设置多个缓存项
-  //   CalcInst.sum([1,2])
-  //   CalcInst.sum([3,4])
+  it('should clear cache correctly', () => {
+    // 设置多个缓存项
+    CalcInst.sum([3, 3, 5], { precision: 2 })
+    CalcInst.sum([3, 3, 5], { precision: 3 })
 
-  //   // 清除特定缓存
-  //   CalcInst.clearCache('sum')
-  //   expect(CalcInst.getCache().sum.size).toBe(0)
-  // })
+    expect(CalcInst.getCache().sum.size).toBe(2)
+    // 清除特定缓存
+    CalcInst.clearCache('sum')
+    expect(CalcInst.getCache().sum.size).toBe(0)
+  })
 })
