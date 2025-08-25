@@ -1,6 +1,6 @@
 {
   "name": "utils-calculator",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -8,16 +8,16 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "coverage": "jest --coverage",
-    "docs": "typedoc --out docs src/index.ts",
-    "update-readme": "tsdoc-markdown --src src/index.ts --dest README.md",
-    "semantic-release": "semantic-release",
-    "prepublishOnly": "npm run build",
-    "release": "standard-version",
-    "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major"
+    "test": "npx jest",
+    "test:watch": "npx jest --watch",
+    "coverage": "npx jest --coverage",
+    "docs": "npx typedoc --out docs src/index.ts",
+    "readme": "npx typedoc --plugin typedoc-plugin-markdown --output-file README.md src/",
+    "semantic-release": "npx semantic-release",
+    "prepublishOnly": "pnpm run build",
+    "release": "npx standard-version",
+    "release:minor": "npx standard-version --release-as minor",
+    "release:major": "npx standard-version --release-as major"
   },
   "keywords": [
     "calculator",
