@@ -1,15 +1,19 @@
 // jest.config.ts
 export default {
-  rootDir: './src',                          // 根目录
+  rootDir: '.',                          // 根目录
   preset: 'ts-jest',                    // 使用ts-jest预设
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/tests/**/*.ts'], // 测试目录
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.ts',      // 匹配 src 下所有 __tests__ 子目录中的 .ts 文件
+    '<rootDir>/src/**/*.{spec,test}.ts',       // 可选：匹配 src 下所有 *.spec.ts 或 *.test.ts 文件
+    '<rootDir>/src/tests/**/*.ts'              // 确保原来的 tests 目录也被包含
+  ],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   collectCoverage: true,
   coverageReporters: ['text', 'lcov'],
   coverageDirectory: 'coverage',
   transform: {
-    '\\.[jt]sx?$': ['ts-jest', { 
+    '\\.[jt]sx?$': ['ts-jest', {
       useESM: true,                     // 启用ESM支持
       babelConfig: true,                // 使用Babel
     }],
