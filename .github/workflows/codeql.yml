@@ -1,11 +1,10 @@
-# .github/workflows/codeql.yml
 name: 'CodeQL'
 
 on:
   push:
-    branches: ['main', 'master']
+    branches: ['master'] # 只监听 master 分支
   pull_request:
-    branches: ['main', 'master']
+    branches: ['main'] # PR 时监听 main 分支
   schedule:
     - cron: '30 1 * * 0'
 
