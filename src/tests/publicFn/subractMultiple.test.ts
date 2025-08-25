@@ -60,25 +60,25 @@ describe('subtractMultiple()', () => {
 
   it('should respect custom precision configuration', () => {
     // 测试自定义精度对计算结果的影响
-    // CalcInst.setOption('precision', 3)
+    CalcInst.setOption('precision', 3)
 
     // 验证3位精度计算
-    // expect(CalcInst.subtractMultiple(10, [3.333], { precision: 3 })).toBe(6.667) // 10-3.333=6.667
+    expect(CalcInst.subtractMultiple(10, [3.333], { precision: 3 })).toBe(6.667) // 10-3.333=6.667
 
     // // 验证更高位小数的四舍五入处理
-    // expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.89) // 5-1.1115=3.8885 → 保留2位后四舍五入为3.89
+    expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.89) // 5-1.1115=3.8885 → 保留2位后四舍五入为3.89
 
     // // 测试方法级精度覆盖全局配置
-    // expect(
-    //   CalcInst.subtractMultiple(
-    //     10,
-    //     [3.3333],
-    //     { precision: 1 } as BaseOptions, // 方法级配置优先级更高
-    //   )
-    // ).toBe(6.7) // 10-3.3333=6.6667 → 保留1位小数后为6.7
+    expect(
+      CalcInst.subtractMultiple(
+        10,
+        [3.3333],
+        { precision: 1 } as BaseOptions // 方法级配置优先级更高
+      )
+    ).toBe(6.7) // 10-3.3333=6.6667 → 保留1位小数后为6.7
 
     // 测试零值与高精度组合
-    // expect(CalcInst.subtractMultiple(0, [0.0005], { precision: 3 })).toBe(-0.001) // 0 - 0.0005 = -0.0005 → 保留 3 位后为 -0.001
+    expect(CalcInst.subtractMultiple(0, [0.0005], { precision: 3 })).toBe(-0.001) // 0 - 0.0005 = -0.0005 → 保留 3 位后为 -0.001
     expect(CalcInst.subtractMultiple(1, 0.1115, { precision: 3 })).toBe(0.889) // 1 - 0.1115 = 0.8885 -> 0.889
     CalcInst.clearCache('all')
     expect(CalcInst.subtractMultiple(0, 0.1115, { precision: 3 })).toBe(-0.111) // 0 - 0.1115 = -0.1115 → 保留 3 位后为 -0.111
