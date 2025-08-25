@@ -1,8 +1,11 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
-  "include": ["src/**/*", "./*.ts"],
+  "include": [
+    "src/**/*", // 应包含所有源文件
+    "__tests/**/*"
+  ],
   "compilerOptions": {
-    
+   "typeRoots": ["./src/types", "./node_modules/@types"], 
     "rootDir": "./src",
     "outDir": "./dist",
     "module": "ESNext", // 支持 ESM

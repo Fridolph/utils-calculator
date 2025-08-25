@@ -15,7 +15,7 @@ type BaseOptions = {
   precision: number
   taxRate: number
   rateType: RateType
-  runtimePrecision: 8
+  runtimePrecision: 8 // 常量不可修改
 }
 
 type RateType = 'excl_gst' | 'incl_gst' | 'gst_free'
