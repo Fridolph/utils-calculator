@@ -17,12 +17,29 @@ on:
   push:
     branches: [main]
 
-  pull_request:
-    branches: [main]
-
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,14 +49,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.18.0'
-          registry-url: 'https://www.npmjs.com/package/utils-calculator'
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Run tests
-        run: npm test
 
       - name: Build project
         run: npm run build
@@ -58,28 +72,3 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.CALCULATOR_NPM_TOKEN }}
-
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org/'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate docs
-        run: npm run docs
-
-      - name: Update README
-        run: npm run update-readme
-
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.CALCULATOR_NPM_TOKEN }}
-        run: npx semantic-release
