@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-name: Release
+name: Release & Auto Publish
 
 on:
   workflow_dispatch:
@@ -13,6 +13,12 @@ on:
           - patch
           - minor
           - major
+
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
 
 jobs:
   release:
@@ -52,3 +58,28 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.CALCULATOR_NPM_TOKEN }}
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate docs
+        run: npm run docs
+
+      - name: Update README
+        run: npm run update-readme
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.CALCULATOR_NPM_TOKEN }}
+        run: npx semantic-release

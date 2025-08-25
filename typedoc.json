@@ -1,7 +1,8 @@
 {
   "entryPoints": ["src/main.ts"],
-  "out": "docs/api",
+  "out": "docs",
   "theme": "markdown",
+  "includeVersion": true,
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeExternals": true,

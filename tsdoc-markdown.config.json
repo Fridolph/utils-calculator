@@ -1,0 +1,8 @@
+{
+  "inputFiles": ["src/index.ts"],
+  "outputFile": "README.md",
+  "markdownOptions": {
+    "types": true,
+    "noEmoji": false
+  }
+}

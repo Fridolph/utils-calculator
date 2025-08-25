@@ -1,20 +1,25 @@
+<!-- TSDOC_START -->
+
 # utils-calculator 🧮
+
 [![Tests](https://img.shields.io/badge/tests-100%25-green)](https://github.com/Fridolph/utils-calculator)
 [![npm version](https://img.shields.io/npm/v/utils-calculator)](https://www.npmjs.com/package/utils-calculator)
 [![License](https://img.shields.io/npm/l/utils-calculator)](https://github.com/Fridolph/utils-calculator/blob/main/LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-green)](https://github.com/Fridolph/utils-calculator)
 [![Downloads](https://img.shields.io/npm/dm/utils-calculator)](https://www.npmjs.com/package/utils-calculator)
 
-基于TypeScript的高性能计算工具库，提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景。
+基于 TypeScript 的高性能计算工具库，提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景。
 
 ## 🌟 特性
+
 - **单例模式**：避免重复实例化开销
 - **缓存机制**：自动缓存计算结果，提升重复计算性能
-- **精度控制**：支持运行时动态调整计算精度（最高8位）
-- **类型安全**：完整的TypeScript类型定义
+- **精度控制**：支持运行时动态调整计算精度（最高 8 位）
+- **类型安全**：完整的 TypeScript 类型定义
 - **多计算场景**：支持加减、百分比转换、税率计算等常用场景
 
 ## 📦 安装
+
 ```bash
 npm install utils-calculator
 ```
@@ -58,7 +63,7 @@ const calc = Calculator.getInstance()
 公式：总价 = 数量 × 单价
 
 ```ts
-CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 }) 
+CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 })
 // { quantity:3, unitPrice:3.333, linePrice:9.999 }
 ```
 
@@ -107,9 +112,9 @@ CalcInst.percentToDecimal(50.56789, 4) // 0.5057
 
 ✅ 目前 91.42% 测试覆盖率，会尽量优化提升到 100%
 
-|File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |
-|----------|---------|----------|---------|---------|-------------------|
-|main.ts  |   91.12 |    91.58 |     100 |   91.42|
+| File    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |
+| ------- | ------- | -------- | ------- | ------- | ----------------- |
+| main.ts | 91.12   | 91.58    | 100     | 91.42   |
 
 💯 所有方法均通过以下验证：
 
@@ -118,16 +123,17 @@ CalcInst.percentToDecimal(50.56789, 4) // 0.5057
 - 异常输入处理
 - 缓存命中验证
 
-
 ## 📊 性能特性
 
-|特性|指标|
-|----|---|
-|精度|最高支持8位小数|
-|缓存|自动缓存提升性能|
-|时间复杂度|	O(1) 常量时间复杂度|
-|初始化耗时|	0.1ms (基准测试)|
-|内存占用|	单例模式优化内存|
+| 特性       | 指标                |
+| ---------- | ------------------- |
+| 精度       | 最高支持 8 位小数   |
+| 缓存       | 自动缓存提升性能    |
+| 时间复杂度 | O(1) 常量时间复杂度 |
+| 初始化耗时 | 0.1ms (基准测试)    |
+| 内存占用   | 单例模式优化内存    |
+
+<!-- TSDOC_END -->
 
 ## 🤝 贡献指南
 
