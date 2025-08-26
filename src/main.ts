@@ -1458,7 +1458,11 @@ export class Calculator {
     }
 
     const curOptions = this._getMergedOptions(userOptions)
-    // 处理 userRate，如果未提供则使用全局配置
+    /**
+     * @remarks
+     * 修改逻辑：不处理 userRate 如果未提供则使用全局配置 
+     * [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6) 如果无效直接返回 originPrice
+     */
     let curRate: number
     if (userRate === undefined) {
       curRate = curOptions.taxRate
@@ -1471,8 +1475,16 @@ export class Calculator {
       curRate = userRate
     }
 
-    // 处理 userRateType，如果未提供则使用全局配置
+    // 
+    /**
+     * @remarks
+     * 原逻辑：处理 userRateType，如果未提供则使用全局配置
+     * 新逻辑：userRate 无效时直接返回 originPrice  [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6)
+     */
     let curRateType: RateType
+    if (userRate === null || isNaN(userRate as any) || (userRate as number) < 0 || (userRate as number) > 1) {
+      return isNumber(originPrice) ? originPrice : 0
+    }
     if (userRateType === undefined) {
       curRateType = curOptions.rateType
     } else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
