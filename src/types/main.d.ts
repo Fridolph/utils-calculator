@@ -27,9 +27,9 @@ interface NumberFormatOptions {
   precision?: number
   pattern?: string
   negativePattern?: string
-  format?: any
+  format?: unknown
   errorOnInvalid?: boolean
-  increment?: any
+  increment?: unknown
   useVedic?: boolean
   fromCents?: boolean
 }

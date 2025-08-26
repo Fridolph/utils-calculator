@@ -48,7 +48,7 @@ export const $number = (
   }
   finalOptions.precision = precision
 
-  return Currency(value, finalOptions)
+  return Currency(value, finalOptions as Currency.Options)
 }
 
 export const formatNumber = (

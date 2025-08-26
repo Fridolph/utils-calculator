@@ -2,7 +2,7 @@
 
 ***
 
-[utils-calculator](../globals.md) / Calculator
+[utils-calculator](../README.md) / Calculator
 
 # Class: Calculator
 
