@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "npx tsc",
+    "lint": "pnpm exec biome lint --write ./src/**/*.ts",
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-typescript": "^7.27.1",
+    "@biomejs/biome": "2.2.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
