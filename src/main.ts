@@ -1453,20 +1453,28 @@ export class Calculator {
     userOptions?: BaseOptions
   ): number {
     let finalRatePrice: number = 0
-    if (originPrice === null || originPrice === 0) {
+    // 边界处理：originPrice 为 null/0 返回 0
+    if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || isNaN(originPrice)) {
       return 0
+    }
+    // 不处理 originPrice 为负的情况，价格应该为正
+    if (isNumber(originPrice) && originPrice < 0) {
+      console.error('应确保传入参数 originPrice 为一个正数')
+      return originPrice
     }
 
     const curOptions = this._getMergedOptions(userOptions)
-    // 处理 userRate，如果未提供则使用全局配置
+    // 处理 userRate
     let curRate: number
     if (userRate === undefined) {
       curRate = curOptions.taxRate
-    } else if (userRate === null || isNaN(userRate)) {
-      curRate = curOptions.taxRate
+    } else if (userRate === null || isNaN(userRate) || typeof userRate !== 'number') {
+      // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
+      console.warn('userRate 无效，直接返回原始价格')
+      return originPrice
     } else if (userRate < 0 || userRate > 1) {
-      console.warn('userRate 应为 [0, 1] 的小数，使用全局taxRate配置')
-      curRate = curOptions.taxRate
+      console.error('userRate 应为 [0, 1] 的小数，请检查 userRate 参数后重新尝试')
+      return originPrice
     } else {
       curRate = userRate
     }
