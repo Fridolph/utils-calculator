@@ -156,11 +156,19 @@ export class Calculator {
 
   public _getMergedOptions(userOptions?: Partial<BaseOptions>) {
     const curOptions = this.getOptions()
-    return {
-      precision: userOptions?.precision ?? curOptions.precision,
-      taxRate: userOptions?.taxRate ?? curOptions.taxRate,
-      rateType: userOptions?.rateType ?? curOptions.rateType,
-      runtimePrecision: curOptions.runtimePrecision,
+    if (isObject(userOptions)) {
+      return {
+        ...Object.assign({}, curOptions, userOptions),
+        runtimePrecision: curOptions.runtimePrecision, // 确保 runtimePrecision 不被覆盖
+      }  
+    }
+    else {
+      return {
+        precision: curOptions.precision,
+        taxRate: curOptions.taxRate,
+        rateType: curOptions.rateType,
+        runtimePrecision: curOptions.runtimePrecision,
+      }
     }
   }
 
@@ -499,7 +507,7 @@ export class Calculator {
     if (numbersToSum.length > 0) {
       const sumResult = numbersToSum.reduce((acc: number, num: number) => {
         return $number(acc, { precision: mergedOptions.runtimePrecision }).add(num).value
-      }, 0)
+      }, $number(0, { precision: mergedOptions.runtimePrecision }).value)
       total = sumResult
     }
 
