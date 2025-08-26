@@ -53,7 +53,7 @@ describe('Calculator Core Edge Cases', () => {
   it('should handle invalid rate types', () => {
     // 无效税率类型处理
     expect(() => {
-      CalcInst.setOption('rateType', 'invalid' as any)
+      CalcInst.setOption('rateType', 'invalid' as unknown)
     }).toThrow('Invalid RateType')
     
     // 无效税率值处理
