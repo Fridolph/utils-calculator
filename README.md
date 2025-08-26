@@ -1,11 +1,9 @@
-<!-- TSDOC_START -->
-
 # utils-calculator 🧮
 
 [![Tests](https://img.shields.io/badge/tests-100%25-green)](https://github.com/Fridolph/utils-calculator)
 [![npm version](https://img.shields.io/npm/v/utils-calculator)](https://www.npmjs.com/package/utils-calculator)
 [![License](https://img.shields.io/npm/l/utils-calculator)](https://github.com/Fridolph/utils-calculator/blob/main/LICENSE)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-green)](https://github.com/Fridolph/utils-calculator)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-yellow)](https://github.com/Fridolph/utils-calculator)
 [![Downloads](https://img.shields.io/npm/dm/utils-calculator)](https://www.npmjs.com/package/utils-calculator)
 
 基于 TypeScript 的高性能计算工具库，提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景。
@@ -110,11 +108,11 @@ CalcInst.percentToDecimal(50.56789, 4) // 0.5057
 
 ## 🧪 测试覆盖率
 
-✅ 目前 91.42% 测试覆盖率，会尽量优化提升到 100%
+✅ 目前 90.75% 测试覆盖率，会尽量优化提升到 100%
 
 | File    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s |
 | ------- | ------- | -------- | ------- | ------- | ----------------- |
-| main.ts | 91.12   | 91.58    | 100     | 91.42   |
+| main.ts | 90.75   | 91.55    | 100.00     | 90.75   |
 
 💯 所有方法均通过以下验证：
 
@@ -132,8 +130,6 @@ CalcInst.percentToDecimal(50.56789, 4) // 0.5057
 | 时间复杂度 | O(1) 常量时间复杂度 |
 | 初始化耗时 | 0.1ms (基准测试)    |
 | 内存占用   | 单例模式优化内存    |
-
-<!-- TSDOC_END -->
 
 ## 🤝 贡献指南
 

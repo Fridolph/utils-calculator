@@ -1,6 +1,8 @@
-name: Release & Auto Publish
+name: Automated Release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       release-type:
@@ -12,28 +14,32 @@ on:
           - patch
           - minor
           - major
-  push:
-    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          registry-url: 'https://registry.npmjs.org/'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 10
+
       - name: Get pnpm store directory
         id: pnpm-cache
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -41,8 +47,10 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install
+
       - name: Run tests
         run: pnpm run test
 
@@ -51,23 +59,28 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org/'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 10
+
       - name: Get pnpm store directory
         id: pnpm-cache
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -75,13 +88,25 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install
-      - name: Build project
+
+      - name: Run build
         run: pnpm run build
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          # 默认值
+          echo "RELEASE_TYPE=patch" >> $GITHUB_ENV
+          if [ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]; then
+            echo "RELEASE_TYPE=${{ github.event.inputs.release-type }}" >> $GITHUB_ENV
+          fi
+
       - name: Run release script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.CALCULATOR_NPM_TOKEN }}
         run: |
-          pnpm run release:${{ env.RELEASE_TYPE || 'patch' }}
+          pnpm run release:${{ env.RELEASE_TYPE }}
