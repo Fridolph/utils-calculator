@@ -21,11 +21,13 @@ describe('computeRate()', () => {
 
   it('should handle negative values', () => {
     // 分子为负数
-    expect(CalcInst.computeRate(-10, 50)).toBe(-10)
+    expect(CalcInst.computeRate(-10, 5)).toBe(-10)
     // 分母为负数
     expect(CalcInst.computeRate(10, -50)).toBe(10)
     // 分子分母都为负数
-    expect(CalcInst.computeRate(-10, -50)).toBe(-10)
+    expect(CalcInst.computeRate(-10, -0.5)).toBe(-10)
+
+    expect(CalcInst.computeRate(-10, 0.5)).toBe(-10)
   })
 
   it('should return originPrice for invalid Param: userRate', () => {
