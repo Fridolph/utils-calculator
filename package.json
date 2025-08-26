@@ -11,6 +11,7 @@
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
+    "coverage:badge": "node scripts/generate-coverage-badge.js",
     "docs": "npx typedoc --out docs --entryPoints src/main.ts --hideGenerator",
     "readme": "npx typedoc --plugin typedoc-plugin-markdown --out ./docs-markdown --entryPoints src/main.ts --hideGenerator --excludeNotDocumented false --readme none --entryPointStrategy expand --githubPages false && cat ./docs-markdown/README.md > NEWREADME.md && rm -rf ./docs-markdown && echo 'README generated as NEWREADME.md to prevent accidental overwrites'",
     "docs:full": "pnpm run readme && pnpm run docs",
