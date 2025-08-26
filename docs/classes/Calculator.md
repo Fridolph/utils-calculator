@@ -1,4 +1,4 @@
-[**utils-calculator**](../README.md)
+[**utils-calculator v1.1.2**](../README.md)
 
 ***
 
@@ -478,7 +478,7 @@ expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
 `number`
 
 税率值（0-1之间的小数），支持以下处理：
-- null：使用全局taxRate配置
+- null/undefined：使用全局taxRate配置
 - NaN：返回原始价格
 - 负值：强制转为0
 - 默认值：0.1（对应默认配置）
@@ -520,6 +520,8 @@ CalcInst.computeRate(10, 0.1) // 0.91（10/(1+0.1)*0.1）
 CalcInst.computeRate(25, 0.1, 'excl_gst') // 2.5（25*0.1）
 // 免税场景
 CalcInst.computeRate(100, 0.1, 'gst_free') // 0
+// 使用全局配置
+CalcInst.computeRate(100) // 根据全局taxRate和rateType计算
 ```
 
 #### Performance
@@ -531,9 +533,9 @@ CalcInst.computeRate(100, 0.1, 'gst_free') // 0
 
 自动处理以下异常情况：
 - originPrice为null/0：返回0
-- userRate为null/NaN：使用全局taxRate配置
-- userRateType无效：返回0
-- userRate超出[0,1]范围：返回原始价格
+- userRate为NaN：使用全局taxRate配置
+- userRate超出[0,1]范围：使用全局taxRate配置
+- userRateType无效：使用全局rateType配置
 
 #### Caching
 
@@ -568,6 +570,8 @@ expect(CalcInst.computeRate(10, 0)).toBe(0)
 expect(CalcInst.computeRate(-10, 50)).toBe(-10)
 // 无效参数处理
 expect(CalcInst.computeRate(10, 'invalid' as any)).toBe(10)
+// 使用全局配置
+expect(CalcInst.computeRate(100)).toBe(10) // 假设全局taxRate=0.1, rateType='excl_gst'
 // 缓存验证
 const cacheSize = CalcInst.getCache().computeRate.size
 CalcInst.computeRate(10, 0.6)
@@ -715,6 +719,10 @@ expect(CalcInst.getCache().decimalToPercent.size).toBe(cacheSize + 1)
 
 `string`
 
+#### Description
+
+[issue_1](https://github.com/Fridolph/utils-calculator/issues/1) 为了确保对象属性顺序不影响缓存键的一致性，我们需要对对象进行标准化处理，例如按键名排序后再序列化。
+
 ***
 
 ### getCache()
@@ -768,7 +776,7 @@ const invalidCache = CalcInst.getCache('invalidType'); // 控制台警告：Inva
 keyof `CacheStore`
 
 可选缓存类型，支持以下类型：
-'sum' | 'subtractMultiple' | 'calcUnitPrice' | 'calcLinePrice' | 
+'sum' | 'subtractMultiple' | 'calcUnitPrice' | 'calcLinePrice' |
 'percentToDecimal' | 'decimalToPercent' | 'calculateDiscountedPrice' | 'computeRate'
 
 ##### Returns
@@ -1367,6 +1375,7 @@ expect(CalcInst.getCache().sum.size).toBe(cacheSize + 1)
 const calc1 = Calculator.getInstance();
 const calc2 = Calculator.getInstance();
 expect(calc1).toBe(calc2); // 严格相等验证
+```
 
 // 单例模式与静态实例的等价性
 expect(CalcInst).toBe(Calculator.getInstance());
