@@ -2,7 +2,7 @@
 
 ***
 
-[utils-calculator](../globals.md) / CalcInst
+[utils-calculator](../README.md) / CalcInst
 
 # Variable: CalcInst
 

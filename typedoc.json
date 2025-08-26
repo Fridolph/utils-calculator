@@ -6,7 +6,7 @@
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeExternals": true,
-  "readme": "README.md",
+  "readme": "none",
   "hideGenerator": true,
   "tsconfig": "tsconfig.json",
   "plugin": ["typedoc-plugin-markdown"],
