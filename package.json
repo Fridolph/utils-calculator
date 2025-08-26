@@ -12,7 +12,7 @@
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
     "docs": "npx typedoc --out docs --entryPoints src/main.ts --hideGenerator",
-    "readme": "npx typedoc --plugin typedoc-plugin-markdown --out . --entryPointStrategy expand --entryPoints src/main.ts --hideGenerator --excludeNotDocumented false --readme none --githubPages false",
+    "readme": "npx typedoc --plugin typedoc-plugin-markdown --out ./docs-markdown --entryPoints src/main.ts --hideGenerator --excludeNotDocumented false --readme none --entryPointStrategy expand --githubPages false && cat ./docs-markdown/README.md > NEWREADME.md && rm -rf ./docs-markdown && echo 'README generated as NEWREADME.md to prevent accidental overwrites'",
     "docs:full": "pnpm run readme && pnpm run docs",
     "semantic-release": "npx semantic-release",
     "prepublishOnly": "pnpm run build",
