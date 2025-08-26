@@ -1482,15 +1482,14 @@ export class Calculator {
      * 新逻辑：userRate 无效时直接返回 originPrice  [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6)
      */
     let curRateType: RateType
-    if (userRate === null || isNaN(userRate as any) || (userRate as number) < 0 || (userRate as number) > 1) {
-      return isNumber(originPrice) ? originPrice : 0
-    }
     if (userRateType === undefined) {
       curRateType = curOptions.rateType
-    } else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
-      console.warn(`Invalid rate type: ${userRateType}，使用全局rateType配置`)
+    }
+    else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
+      console.warn(`Invalid rate type: ${userRateType}, 使用全局rateType配置`)
       curRateType = curOptions.rateType
-    } else {
+    }
+    else {
       curRateType = userRateType
     }
 
