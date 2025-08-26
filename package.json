@@ -20,7 +20,8 @@
     "prepublishOnly": "pnpm run build",
     "release": "npx standard-version",
     "release:minor": "npx standard-version --release-as minor",
-    "release:major": "npx standard-version --release-as major"
+    "release:major": "npx standard-version --release-as major",
+    "release:patch": "npx standard-version --release-as patch"
   },
   "keywords": [
     "calculator",
