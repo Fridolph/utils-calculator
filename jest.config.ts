@@ -11,7 +11,7 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   collectCoverage: true,
   coverageReporters: ['text', 'lcov'],
-  coverageDirectory: 'coverage',
+  coverageDirectory: '<rootDir>/coverage',
   transform: {
     '\\.[jt]sx?$': [
       'ts-jest',
