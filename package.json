@@ -1,6 +1,6 @@
 {
   "name": "utils-calculator",
-  "version": "2.1.0",
+  "version": "1.1.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "lint": "pnpm exec biome lint --write ./src/**/*.ts",
+    "lint": "pnpm exec biome lint --write ./src",
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
