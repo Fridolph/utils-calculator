@@ -10,17 +10,28 @@
  * @example 小数转百分比 CalcInst.decimalToPercent(0.50549993) -> 50.56
  * @example 百分比转小数 CalcInst.decimalToPercent(0.50549993) -> 50.56
  */
-import { $number } from './utils'
-import { isNumber, isObject } from './utils'
+import Decimal from 'decimal.js'
+import { isNumber, isObject } from './utils/type'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
  */
 const defaultBaseOptions: BaseOptions = {
-  precision: 2, // 最高支持8位小数
-  runtimePrecision: 10, // 不可修改
+  precision: 2, // 默认计算保留2位小数 - 根据业务需求自行调整
+  runtimePrecision: 10, // 不可修改, 计算时以10位小数来计算保留10位精度
   taxRate: 0.1, // 折扣率 - 理解为 打九折
   rateType: 'incl_gst', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 incl_gst
+}
+
+const defaultDecimalConfig: Decimal.Config = {
+  precision: 10, // 暂时使用10位精度，可根据需求灵活调整
+  rounding: 4, // 使用标准四舍五入 5进位 4舍去
+  toExpNeg: -7,
+  toExpPos: 21,
+  maxE: 9e15,
+  minE: -9e15,
+  modulo: 1,
+  crypto: false,
 }
 
 const cacheFnList = [
@@ -62,13 +73,13 @@ export class Calculator {
   private constructor() {
     this.calcCache = {
       sum: new Map(),
-      subtractMultiple: new Map(),
-      calcUnitPrice: new Map(),
-      calcLinePrice: new Map(),
-      percentToDecimal: new Map(),
-      decimalToPercent: new Map(),
-      calculateDiscountedPrice: new Map(),
-      computeRate: new Map(),
+      // subtractMultiple: new Map(),
+      // calcUnitPrice: new Map(),
+      // calcLinePrice: new Map(),
+      // percentToDecimal: new Map(),
+      // decimalToPercent: new Map(),
+      // calculateDiscountedPrice: new Map(),
+      // computeRate: new Map(),
     }
     this.baseOptions = defaultBaseOptions
   }
@@ -204,14 +215,14 @@ export class Calculator {
     cacheType?: keyof CacheStore
   ): CacheStore | CacheStore[keyof CacheStore] {
     if (cacheType === null || cacheType === undefined) {
-      return this.calcCache
+      return this.calcCache as CacheStore
     }
     if (cacheFnList.includes(cacheType as string)) {
-      return this.calcCache[cacheType]
+      return this.calcCache[cacheType] as Map<string, unknown>
     } else {
       console.warn(`Invalid cacheType: ${cacheType}`)
     }
-    return this.calcCache
+    return this.calcCache as CacheStore
   }
 
   /**
@@ -255,27 +266,27 @@ export class Calculator {
     if (cacheType === 'all' || cacheType === 'sum') {
       this.calcCache.sum.clear()
     }
-    if (cacheType === 'all' || cacheType === 'subtractMultiple') {
-      this.calcCache.subtractMultiple.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
-      this.calcCache.calcUnitPrice.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'calcLinePrice') {
-      this.calcCache.calcLinePrice.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'percentToDecimal') {
-      this.calcCache.percentToDecimal.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'decimalToPercent') {
-      this.calcCache.decimalToPercent.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'calculateDiscountedPrice') {
-      this.calcCache.calculateDiscountedPrice.clear()
-    }
-    if (cacheType === 'all' || cacheType === 'computeRate') {
-      this.calcCache.computeRate.clear()
-    }
+    // if (cacheType === 'all' || cacheType === 'subtractMultiple') {
+    //   this.calcCache.subtractMultiple.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
+    //   this.calcCache.calcUnitPrice.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'calcLinePrice') {
+    //   this.calcCache.calcLinePrice.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'percentToDecimal') {
+    //   this.calcCache.percentToDecimal.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'decimalToPercent') {
+    //   this.calcCache.decimalToPercent.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'calculateDiscountedPrice') {
+    //   this.calcCache.calculateDiscountedPrice.clear()
+    // }
+    // if (cacheType === 'all' || cacheType === 'computeRate') {
+    //   this.calcCache.computeRate.clear()
+    // }
     if (!cacheFnList.includes(cacheType)) {
       console.warn(`Invalid cacheType: ${cacheType}`)
     }
@@ -328,25 +339,26 @@ export class Calculator {
   public queryCacheStat(cacheType: CacheType = 'all') {
     const cacheGroups = {
       sum: this.calcCache.sum,
-      subtractMultiple: this.calcCache.subtractMultiple,
-      calcUnitPrice: this.calcCache.calcUnitPrice,
-      calcLinePrice: this.calcCache.calcLinePrice,
-      percentToDecimal: this.calcCache.percentToDecimal,
-      decimalToPercent: this.calcCache.decimalToPercent,
-      calculateDiscountedPrice: this.calcCache.calculateDiscountedPrice,
-      computeRate: this.calcCache.computeRate,
+      // subtractMultiple: this.calcCache.subtractMultiple,
+      // calcUnitPrice: this.calcCache.calcUnitPrice,
+      // calcLinePrice: this.calcCache.calcLinePrice,
+      // percentToDecimal: this.calcCache.percentToDecimal,
+      // decimalToPercent: this.calcCache.decimalToPercent,
+      // calculateDiscountedPrice: this.calcCache.calculateDiscountedPrice,
+      // computeRate: this.calcCache.computeRate,
     }
 
+    // const result: { [key in CacheType]: number } = {
     const result: { [key in CacheType]: number } = {
       all: 0,
       sum: 0,
-      subtractMultiple: 0,
-      calcUnitPrice: 0,
-      calcLinePrice: 0,
-      percentToDecimal: 0,
-      decimalToPercent: 0,
-      calculateDiscountedPrice: 0,
-      computeRate: 0,
+      // subtractMultiple: 0,
+      // calcUnitPrice: 0,
+      // calcLinePrice: 0,
+      // percentToDecimal: 0,
+      // decimalToPercent: 0,
+      // calculateDiscountedPrice: 0,
+      // computeRate: 0,
     }
 
     const cacheKeys =
@@ -486,6 +498,12 @@ export class Calculator {
     userOptions?: Partial<BaseOptions>
   ): number {
     const mergedOptions = this._getMergedOptions(userOptions)
+      // ✅ 修复点1：运行时使用高精度，不设置 precision
+    const DecimalClone = Decimal.clone({
+      ...defaultDecimalConfig,
+      rounding: Decimal.ROUND_HALF_UP,
+    })
+
     const cacheKey = this.generateCacheKey({ data, mergedOptions })
     if (this.calcCache.sum.has(cacheKey)) {
       return this.calcCache.sum.get(cacheKey) as number
@@ -496,7 +514,8 @@ export class Calculator {
 
     if (Array.isArray(data)) {
       numbersToSum = data.filter((num) => isNumber(num) && !Number.isNaN(num))
-    } else if (isObject(data)) {
+    }
+    else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
@@ -504,16 +523,18 @@ export class Calculator {
       )
     }
 
+    let totalDecimal
     if (numbersToSum.length > 0) {
-      const sumResult = numbersToSum.reduce((acc: number, num: number) => {
-        return $number(acc, { precision: mergedOptions.runtimePrecision }).add(num).value
-      }, $number(0, { precision: mergedOptions.runtimePrecision }).value)
-      total = sumResult
+    // 使用独立实例进行高精度计算
+      totalDecimal = new DecimalClone(0)
+      for (const num of numbersToSum) {
+        totalDecimal = totalDecimal.add(new DecimalClone(num))
+      }
     }
-
-    const finalTotal = $number(total, { precision: mergedOptions.precision }).value
-    this.calcCache.sum.set(cacheKey, finalTotal)
-    return finalTotal
+    // 使用 toDecimalPlaces(mergedOptions.precision) 控制小数位数
+    total = totalDecimal?.toDecimalPlaces(mergedOptions.precision).toNumber() as number
+    this.calcCache.sum.set(cacheKey, total)
+    return total
   }
 
   /**
@@ -607,53 +628,53 @@ export class Calculator {
    * expect(CalcInst.getCache().subtractMultiple.size).toBe(cacheSize + 1)
    * ```
    */
-  public subtractMultiple(
-    initialValue: number,
-    subtractValues: number[] | number,
-    userOptions?: Partial<BaseOptions>
-  ): number {
-    // 参数预处理
-    if (!Array.isArray(subtractValues)) {
-      subtractValues = [subtractValues] as number[]
-    }
+  // public subtractMultiple(
+  //   initialValue: number,
+  //   subtractValues: number[] | number,
+  //   userOptions?: Partial<BaseOptions>
+  // ): number {
+  //   // 参数预处理
+  //   if (!Array.isArray(subtractValues)) {
+  //     subtractValues = [subtractValues] as number[]
+  //   }
 
-    if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
-      console.error('被减数应为 Number 类型, 这里一律处理为 0 继续计算')
-      initialValue = 0
-    }
-    // 强制过滤非数字项 -> 即当成 0 来处理
-    // 注：'123' 字符串数字 也当作非法值，否则有歧义。使用者必须确保传入安全的 Number 类型
-    const filteredSubtractValues = subtractValues.filter((v: unknown) => isNumber(v))
+  //   if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
+  //     console.error('被减数应为 Number 类型, 这里一律处理为 0 继续计算')
+  //     initialValue = 0
+  //   }
+  //   // 强制过滤非数字项 -> 即当成 0 来处理
+  //   // 注：'123' 字符串数字 也当作非法值，否则有歧义。使用者必须确保传入安全的 Number 类型
+  //   const filteredSubtractValues = subtractValues.filter((v: unknown) => isNumber(v))
 
-    const mergedOptions = this._getMergedOptions(userOptions)
+  //   const mergedOptions = this._getMergedOptions(userOptions)
 
-    /**
-     * @remarks fix [issues-2](https://github.com/Fridolph/utils-calculator/issues/2)
-     * 修改后：缓存键保持不变，但更明确地包含userOptions
-     */
-    const cacheKey = this.generateCacheKey({
-      initialValue,
-      subtractValue: filteredSubtractValues,
-      userOptions,
-    })
+  //   /**
+  //    * @remarks fix [issues-2](https://github.com/Fridolph/utils-calculator/issues/2)
+  //    * 修改后：缓存键保持不变，但更明确地包含userOptions
+  //    */
+  //   const cacheKey = this.generateCacheKey({
+  //     initialValue,
+  //     subtractValue: filteredSubtractValues,
+  //     userOptions,
+  //   })
 
-    if (this.calcCache.subtractMultiple.has(cacheKey)) {
-      return this.calcCache.subtractMultiple.get(cacheKey) as number
-    }
+  //   if (this.calcCache.subtractMultiple.has(cacheKey)) {
+  //     return this.calcCache.subtractMultiple.get(cacheKey) as number
+  //   }
 
-    // 复用 sum 方法计算减数总和，这样可以生成 sum 缓存项
-    // 不传递userOptions给sum方法，确保sum方法使用全局配置，避免创建额外的缓存项
-    const totalToSubtract = this.sum(filteredSubtractValues)
+  //   // 复用 sum 方法计算减数总和，这样可以生成 sum 缓存项
+  //   // 不传递userOptions给sum方法，确保sum方法使用全局配置，避免创建额外的缓存项
+  //   const totalToSubtract = this.sum(filteredSubtractValues)
 
-    const result = $number(initialValue, {
-      precision: mergedOptions.runtimePrecision,
-    }).subtract(totalToSubtract).value
+  //   const result = $number(initialValue, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).subtract(totalToSubtract).value
 
-    const finalResult = $number(result, { precision: mergedOptions.precision }).value
-    this.calcCache.subtractMultiple.set(cacheKey, finalResult)
+  //   const finalResult = $number(result, { precision: mergedOptions.precision }).value
+  //   this.calcCache.subtractMultiple.set(cacheKey, finalResult)
 
-    return finalResult
-  }
+  //   return finalResult
+  // }
 
   /**
    * 基础公式: 单价 = 总价 / 数量
@@ -747,60 +768,60 @@ export class Calculator {
    * expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
    * ```
    */
-  public calcUnitPrice(
-    calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
-    userOptions?: BaseOptions
-  ): CalcBaseTotalParams {
-    const { quantity, linePrice }: any = calcBaseTotalParams
-    let finalUnitPrice: number = 0
+  // public calcUnitPrice(
+  //   calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
+  //   userOptions?: BaseOptions
+  // ): CalcBaseTotalParams {
+  //   const { quantity, linePrice }: any = calcBaseTotalParams
+  //   let finalUnitPrice: number = 0
 
-    // 边界1 如果总价和数量都为null，直接返回初始值
-    if (quantity === null && linePrice === null) {
-      return { quantity: null, unitPrice: null, linePrice: null }
-    }
+  //   // 边界1 如果总价和数量都为null，直接返回初始值
+  //   if (quantity === null && linePrice === null) {
+  //     return { quantity: null, unitPrice: null, linePrice: null }
+  //   }
 
-    // 边界2 若确实没有数量，但传有总价，产品希望单价总价一致
-    if (quantity === null) {
-      return { quantity, unitPrice: linePrice, linePrice }
-    }
+  //   // 边界2 若确实没有数量，但传有总价，产品希望单价总价一致
+  //   if (quantity === null) {
+  //     return { quantity, unitPrice: linePrice, linePrice }
+  //   }
 
-    // 边界3 总价未传入的情况
-    if (isNumber(quantity) && linePrice === null) {
-      return { quantity, unitPrice: null, linePrice: null }
-    }
+  //   // 边界3 总价未传入的情况
+  //   if (isNumber(quantity) && linePrice === null) {
+  //     return { quantity, unitPrice: null, linePrice: null }
+  //   }
 
-    // 边界4 处理分母为0的情况
-    if (quantity === 0 && isNumber(linePrice) && linePrice >= 0) {
-      return { quantity: 0, unitPrice: linePrice, linePrice }
-    }
+  //   // 边界4 处理分母为0的情况
+  //   if (quantity === 0 && isNumber(linePrice) && linePrice >= 0) {
+  //     return { quantity: 0, unitPrice: linePrice, linePrice }
+  //   }
 
-    const mergedOptions = this._getMergedOptions(userOptions)
-    const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
-    if (this.calcCache.calcUnitPrice.has(cacheKey)) {
-      return this.calcCache.calcUnitPrice.get(cacheKey) as {
-        quantity: number | null
-        unitPrice: number | null
-        linePrice: number | null
-      }
-    }
+  //   const mergedOptions = this._getMergedOptions(userOptions)
+  //   const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
+  //   if (this.calcCache.calcUnitPrice.has(cacheKey)) {
+  //     return this.calcCache.calcUnitPrice.get(cacheKey) as {
+  //       quantity: number | null
+  //       unitPrice: number | null
+  //       linePrice: number | null
+  //     }
+  //   }
 
-    // 通用计算逻辑 单价 = 总价 / 数量
-    finalUnitPrice = $number(linePrice || 0, {
-      precision: mergedOptions.runtimePrecision,
-    }).divide(quantity).value as number
+  //   // 通用计算逻辑 单价 = 总价 / 数量
+  //   finalUnitPrice = $number(linePrice || 0, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).divide(quantity).value as number
 
-    const result = {
-      quantity,
-      unitPrice: $number(finalUnitPrice as number, {
-        precision: mergedOptions.precision,
-      }).value,
-      linePrice: $number(linePrice as number, {
-        precision: mergedOptions.precision,
-      }).value,
-    }
-    this.calcCache.calcUnitPrice.set(cacheKey, result)
-    return result
-  }
+  //   const result = {
+  //     quantity,
+  //     unitPrice: $number(finalUnitPrice as number, {
+  //       precision: mergedOptions.precision,
+  //     }).value,
+  //     linePrice: $number(linePrice as number, {
+  //       precision: mergedOptions.precision,
+  //     }).value,
+  //   }
+  //   this.calcCache.calcUnitPrice.set(cacheKey, result)
+  //   return result
+  // }
 
   /**
    * 基础公式: 总价 = 数量 * 单价
@@ -894,59 +915,59 @@ export class Calculator {
    * expect(CalcInst.getCache().calcLinePrice.size).toBe(cacheSize + 1)
    * ```
    */
-  public calcLinePrice(
-    calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'linePrice'>>,
-    userOptions?: BaseOptions
-  ): CalcBaseTotalParams {
-    const { quantity, unitPrice }: { quantity: number | null; unitPrice: number | null } =
-      calcBaseTotalParams
-    let finalLinePrice: number = 0
-    // 明确边界处理逻辑，这里统一返回null
-    if (quantity === null && unitPrice === null) {
-      return {
-        quantity: null,
-        unitPrice: null,
-        linePrice: null,
-      }
-    }
-    if (quantity === null && isNumber(unitPrice) && unitPrice >= 0) {
-      return {
-        quantity,
-        unitPrice,
-        linePrice: unitPrice,
-      }
-    }
-    if (isNumber(quantity) && quantity >= 0 && unitPrice === null) {
-      return {
-        quantity,
-        unitPrice: null,
-        linePrice: null,
-      }
-    }
+  // public calcLinePrice(
+  //   calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'linePrice'>>,
+  //   userOptions?: BaseOptions
+  // ): CalcBaseTotalParams {
+  //   const { quantity, unitPrice }: { quantity: number | null; unitPrice: number | null } =
+  //     calcBaseTotalParams
+  //   let finalLinePrice: number = 0
+  //   // 明确边界处理逻辑，这里统一返回null
+  //   if (quantity === null && unitPrice === null) {
+  //     return {
+  //       quantity: null,
+  //       unitPrice: null,
+  //       linePrice: null,
+  //     }
+  //   }
+  //   if (quantity === null && isNumber(unitPrice) && unitPrice >= 0) {
+  //     return {
+  //       quantity,
+  //       unitPrice,
+  //       linePrice: unitPrice,
+  //     }
+  //   }
+  //   if (isNumber(quantity) && quantity >= 0 && unitPrice === null) {
+  //     return {
+  //       quantity,
+  //       unitPrice: null,
+  //       linePrice: null,
+  //     }
+  //   }
 
-    const mergedOptions = this._getMergedOptions(userOptions)
-    const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
-    if (this.calcCache.calcLinePrice.has(cacheKey)) {
-      return this.calcCache.calcLinePrice.get(cacheKey) as CalcBaseTotalParams
-    }
+  //   const mergedOptions = this._getMergedOptions(userOptions)
+  //   const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
+  //   if (this.calcCache.calcLinePrice.has(cacheKey)) {
+  //     return this.calcCache.calcLinePrice.get(cacheKey) as CalcBaseTotalParams
+  //   }
 
-    // 通用计算逻辑
-    finalLinePrice = $number(unitPrice as number, {
-      precision: mergedOptions.runtimePrecision,
-    }).multiply(quantity as number).value
+  //   // 通用计算逻辑
+  //   finalLinePrice = $number(unitPrice as number, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).multiply(quantity as number).value
 
-    const result = {
-      quantity,
-      unitPrice: $number(unitPrice as number, {
-        precision: mergedOptions.precision,
-      }).value,
-      linePrice: $number(finalLinePrice, {
-        precision: mergedOptions.precision,
-      }).value,
-    }
-    this.calcCache.calcLinePrice.set(cacheKey, result)
-    return result
-  }
+  //   const result = {
+  //     quantity,
+  //     unitPrice: $number(unitPrice as number, {
+  //       precision: mergedOptions.precision,
+  //     }).value,
+  //     linePrice: $number(finalLinePrice, {
+  //       precision: mergedOptions.precision,
+  //     }).value,
+  //   }
+  //   this.calcCache.calcLinePrice.set(cacheKey, result)
+  //   return result
+  // }
 
   /**
    * 将百分比数值转换为小数
@@ -1036,45 +1057,45 @@ export class Calculator {
    * expect(CalcInst.getCache().percentToDecimal.size).toBe(cacheSize + 1)
    * ```
    */
-  public percentToDecimal(
-    originPercentage: number | null,
-    decimalPlaces?: number
-  ): number | null {
-    const cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
+  // public percentToDecimal(
+  //   originPercentage: number | null,
+  //   decimalPlaces?: number
+  // ): number | null {
+  //   const cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
 
-    if (decimalPlaces === null || (isNumber(decimalPlaces) && decimalPlaces < 0)) {
-      console.error('参数 decimalPlaces 应为大于 0 的正数')
-      return originPercentage
-    }
+  //   if (decimalPlaces === null || (isNumber(decimalPlaces) && decimalPlaces < 0)) {
+  //     console.error('参数 decimalPlaces 应为大于 0 的正数')
+  //     return originPercentage
+  //   }
 
-    if (this.calcCache.percentToDecimal.has(cacheKey)) {
-      return this.calcCache.percentToDecimal.get(cacheKey) as number | null
-    }
-    // 边界情况：传 null 默认不处理
-    if (originPercentage === null || Number.isNaN(originPercentage)) return null
+  //   if (this.calcCache.percentToDecimal.has(cacheKey)) {
+  //     return this.calcCache.percentToDecimal.get(cacheKey) as number | null
+  //   }
+  //   // 边界情况：传 null 默认不处理
+  //   if (originPercentage === null || Number.isNaN(originPercentage)) return null
 
-    const mergedOptions = this._getMergedOptions({
-      precision: decimalPlaces ?? this.getOptions().precision,
-    })
-    // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
-    // 最终的小数位数是要比传的多两位的
-    let handledPrecision: number = 2
-    // 若传代码用户自己控制精度
-    if (isNumber(decimalPlaces) && decimalPlaces >= 0) {
-      handledPrecision = decimalPlaces
-    }
-    // 没传 默认precision是2，这里为保证转换一致，要加 2
-    else {
-      handledPrecision = mergedOptions.precision + 2
-    }
+  //   const mergedOptions = this._getMergedOptions({
+  //     precision: decimalPlaces ?? this.getOptions().precision,
+  //   })
+  //   // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
+  //   // 最终的小数位数是要比传的多两位的
+  //   let handledPrecision: number = 2
+  //   // 若传代码用户自己控制精度
+  //   if (isNumber(decimalPlaces) && decimalPlaces >= 0) {
+  //     handledPrecision = decimalPlaces
+  //   }
+  //   // 没传 默认precision是2，这里为保证转换一致，要加 2
+  //   else {
+  //     handledPrecision = mergedOptions.precision + 2
+  //   }
 
-    const result = $number(originPercentage, {
-      precision: mergedOptions.runtimePrecision + 2,
-    }).divide(100).value
-    this.calcCache.percentToDecimal.set(cacheKey, result)
+  //   const result = $number(originPercentage, {
+  //     precision: mergedOptions.runtimePrecision + 2,
+  //   }).divide(100).value
+  //   this.calcCache.percentToDecimal.set(cacheKey, result)
 
-    return $number(result, { precision: handledPrecision }).value
-  }
+  //   return $number(result, { precision: handledPrecision }).value
+  // }
 
   /**
    * 将小数转换为百分比
@@ -1170,58 +1191,58 @@ export class Calculator {
    * expect(CalcInst.getCache().decimalToPercent.size).toBe(cacheSize + 1)
    * ```
    */
-  public decimalToPercent(
-    originDecimal: number | null,
-    decimalPlaces: number = 2
-  ): number {
-    // 优先处理边界，不使用缓存
-    if (
-      originDecimal === null ||
-      originDecimal === 0 ||
-      decimalPlaces === null ||
-      Number.isNaN(originDecimal)
-    )
-      return 0
-    if (!isNumber(decimalPlaces) || Number.isNaN(decimalPlaces)) {
-      console.error(
-        '参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字'
-      )
-      return 0
-    }
-    if (decimalPlaces < 0) {
-      console.error(
-        '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前小于0 当作0来处理'
-      )
-      decimalPlaces = 0
-    } else if (decimalPlaces > 8) {
-      console.error(
-        '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理'
-      )
-      decimalPlaces = 8
-    } else if (Number.isNaN(decimalPlaces)) {
-      console.error(
-        '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理'
-      )
-      decimalPlaces = 2
-    }
+  // public decimalToPercent(
+  //   originDecimal: number | null,
+  //   decimalPlaces: number = 2
+  // ): number {
+  //   // 优先处理边界，不使用缓存
+  //   if (
+  //     originDecimal === null ||
+  //     originDecimal === 0 ||
+  //     decimalPlaces === null ||
+  //     Number.isNaN(originDecimal)
+  //   )
+  //     return 0
+  //   if (!isNumber(decimalPlaces) || Number.isNaN(decimalPlaces)) {
+  //     console.error(
+  //       '参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字'
+  //     )
+  //     return 0
+  //   }
+  //   if (decimalPlaces < 0) {
+  //     console.error(
+  //       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前小于0 当作0来处理'
+  //     )
+  //     decimalPlaces = 0
+  //   } else if (decimalPlaces > 8) {
+  //     console.error(
+  //       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理'
+  //     )
+  //     decimalPlaces = 8
+  //   } else if (Number.isNaN(decimalPlaces)) {
+  //     console.error(
+  //       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理'
+  //     )
+  //     decimalPlaces = 2
+  //   }
 
-    const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
-    const cache = this.getCache('percentToDecimal')
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey) as number
-    }
+  //   const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
+  //   const cache = this.getCache('percentToDecimal')
+  //   if (cache.has(cacheKey)) {
+  //     return cache.get(cacheKey) as number
+  //   }
 
-    const mergedOptions = this._getMergedOptions({
-      precision: decimalPlaces,
-    })
-    // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
-    // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
-    const result = $number(originDecimal as number, {
-      precision: mergedOptions.runtimePrecision,
-    }).multiply(100).value
-    this.calcCache.decimalToPercent.set(cacheKey, result)
-    return $number(result, { precision: mergedOptions.precision }).value
-  }
+  //   const mergedOptions = this._getMergedOptions({
+  //     precision: decimalPlaces,
+  //   })
+  //   // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
+  //   // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
+  //   const result = $number(originDecimal as number, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).multiply(100).value
+  //   this.calcCache.decimalToPercent.set(cacheKey, result)
+  //   return $number(result, { precision: mergedOptions.precision }).value
+  // }
 
   /**
    * 计算折扣后的价格
@@ -1315,55 +1336,55 @@ export class Calculator {
    * expect(CalcInst.getCache().calculateDiscountedPrice.size).toBe(cacheSize + 1)
    * ```
    */
-  public calculateDiscountedPrice(
-    originalPrice: number | null,
-    discountRate: number | null,
-    userOptions?: BaseOptions
-  ): number | null {
-    const cacheKey = this.generateCacheKey({ originalPrice, discountRate })
+  // public calculateDiscountedPrice(
+  //   originalPrice: number | null,
+  //   discountRate: number | null,
+  //   userOptions?: BaseOptions
+  // ): number | null {
+  //   const cacheKey = this.generateCacheKey({ originalPrice, discountRate })
 
-    // 边界1 输入价格或折扣为null，统一不处理
-    if (
-      originalPrice === null ||
-      discountRate === null ||
-      Number.isNaN(originalPrice) ||
-      Number.isNaN(discountRate)
-    ) {
-      return null
-    }
-    // 边界2 若原始价格为负数，不处理直接返原价
-    if (isNumber(originalPrice) && originalPrice <= 0) {
-      console.warn('应确保传入参数 originalPrice 为一个正数')
-      return originalPrice
-    }
-    // 边界3 折扣为0，直接返原价
-    if (discountRate === 0) {
-      return originalPrice
-    }
-    // 边界4 折扣为1，（打满折）最终价为0
-    if (discountRate === 1) {
-      return 0
-    }
-    // 边界5 折扣率不能为负，直接返原价
-    if (isNumber(discountRate) && discountRate < 0) {
-      console.warn('折扣率 discountRate  应在 [0, 1] 之间')
-      return originalPrice
-    }
+  //   // 边界1 输入价格或折扣为null，统一不处理
+  //   if (
+  //     originalPrice === null ||
+  //     discountRate === null ||
+  //     Number.isNaN(originalPrice) ||
+  //     Number.isNaN(discountRate)
+  //   ) {
+  //     return null
+  //   }
+  //   // 边界2 若原始价格为负数，不处理直接返原价
+  //   if (isNumber(originalPrice) && originalPrice <= 0) {
+  //     console.warn('应确保传入参数 originalPrice 为一个正数')
+  //     return originalPrice
+  //   }
+  //   // 边界3 折扣为0，直接返原价
+  //   if (discountRate === 0) {
+  //     return originalPrice
+  //   }
+  //   // 边界4 折扣为1，（打满折）最终价为0
+  //   if (discountRate === 1) {
+  //     return 0
+  //   }
+  //   // 边界5 折扣率不能为负，直接返原价
+  //   if (isNumber(discountRate) && discountRate < 0) {
+  //     console.warn('折扣率 discountRate  应在 [0, 1] 之间')
+  //     return originalPrice
+  //   }
 
-    if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
-      return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
-    }
+  //   if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
+  //     return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
+  //   }
 
-    const mergedOptions = this._getMergedOptions(userOptions)
-    const ratePrice = $number(originalPrice, {
-      precision: mergedOptions.runtimePrecision,
-    }).multiply(discountRate).value
-    const finalPrice = $number(originalPrice, {
-      precision: mergedOptions.runtimePrecision,
-    }).subtract(ratePrice).value
-    this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
-    return $number(finalPrice, { precision: mergedOptions.precision }).value
-  }
+  //   const mergedOptions = this._getMergedOptions(userOptions)
+  //   const ratePrice = $number(originalPrice, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).multiply(discountRate).value
+  //   const finalPrice = $number(originalPrice, {
+  //     precision: mergedOptions.runtimePrecision,
+  //   }).subtract(ratePrice).value
+  //   this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
+  //   return $number(finalPrice, { precision: mergedOptions.precision }).value
+  // }
 
   /**
    * 计算税率相关的金额
@@ -1452,96 +1473,96 @@ export class Calculator {
    * expect(CalcInst.getCache().computeRate.size).toBe(cacheSize + 1)
    * ```
    */
-  public computeRate(
-    originPrice: number,
-    userRate?: number,
-    userRateType?: RateType,
-    userOptions?: BaseOptions
-  ): number {
-    let finalRatePrice: number = 0
-    // 边界处理：originPrice 为 null/0 返回 0
-    if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
-      return 0
-    }
-    // 不处理 originPrice 为负的情况，价格应该为正
-    if (isNumber(originPrice) && originPrice < 0) {
-      console.error('应确保传入参数 originPrice 为一个正数')
-      return originPrice
-    }
+  // public computeRate(
+  //   originPrice: number,
+  //   userRate?: number,
+  //   userRateType?: RateType,
+  //   userOptions?: BaseOptions
+  // ): number {
+  //   let finalRatePrice: number = 0
+  //   // 边界处理：originPrice 为 null/0 返回 0
+  //   if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
+  //     return 0
+  //   }
+  //   // 不处理 originPrice 为负的情况，价格应该为正
+  //   if (isNumber(originPrice) && originPrice < 0) {
+  //     console.error('应确保传入参数 originPrice 为一个正数')
+  //     return originPrice
+  //   }
 
-    const curOptions = this._getMergedOptions(userOptions)
-    /**
-     * @remarks
-     * 修改逻辑：不处理 userRate 如果未提供则使用全局配置 
-     * [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6) 如果无效直接返回 originPrice
-     */
-    let curRate: number
-    if (userRate === undefined) {
-      curRate = curOptions.taxRate
-    } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
-      // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
-      console.warn('userRate 无效，直接返回原始价格')
-      return originPrice
-    } else if (userRate < 0 || userRate > 1) {
-      console.error('userRate 应为 [0, 1] 的小数，请检查 userRate 参数后重新尝试')
-      return originPrice
-    } else {
-      curRate = userRate
-    }
+  //   const curOptions = this._getMergedOptions(userOptions)
+  //   /**
+  //    * @remarks
+  //    * 修改逻辑：不处理 userRate 如果未提供则使用全局配置 
+  //    * [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6) 如果无效直接返回 originPrice
+  //    */
+  //   let curRate: number
+  //   if (userRate === undefined) {
+  //     curRate = curOptions.taxRate
+  //   } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
+  //     // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
+  //     console.warn('userRate 无效，直接返回原始价格')
+  //     return originPrice
+  //   } else if (userRate < 0 || userRate > 1) {
+  //     console.error('userRate 应为 [0, 1] 的小数，请检查 userRate 参数后重新尝试')
+  //     return originPrice
+  //   } else {
+  //     curRate = userRate
+  //   }
 
-    /**
-     * @remarks
-     * 原逻辑：处理 userRateType，如果未提供则使用全局配置
-     * 新逻辑：userRate 无效时直接返回 originPrice  [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6)
-     */
-    let curRateType: RateType
-    if (userRateType === undefined) {
-      curRateType = curOptions.rateType
-    }
-    else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
-      console.warn(`Invalid rate type: ${userRateType}, 使用全局rateType配置`)
-      curRateType = curOptions.rateType
-    }
-    else {
-      curRateType = userRateType
-    }
+  //   /**
+  //    * @remarks
+  //    * 原逻辑：处理 userRateType，如果未提供则使用全局配置
+  //    * 新逻辑：userRate 无效时直接返回 originPrice  [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6)
+  //    */
+  //   let curRateType: RateType
+  //   if (userRateType === undefined) {
+  //     curRateType = curOptions.rateType
+  //   }
+  //   else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
+  //     console.warn(`Invalid rate type: ${userRateType}, 使用全局rateType配置`)
+  //     curRateType = curOptions.rateType
+  //   }
+  //   else {
+  //     curRateType = userRateType
+  //   }
 
-    const cacheKey = this.generateCacheKey({
-      originPrice,
-      userRate: curRate,
-      userRateType: curRateType,
-    })
+  //   const cacheKey = this.generateCacheKey({
+  //     originPrice,
+  //     userRate: curRate,
+  //     userRateType: curRateType,
+  //   })
 
-    if (this.calcCache.computeRate.has(cacheKey)) {
-      return this.calcCache.computeRate.get(cacheKey) as number
-    }
+  //   if (this.calcCache.computeRate.has(cacheKey)) {
+  //     return this.calcCache.computeRate.get(cacheKey) as number
+  //   }
 
-    const addedRate = $number(1, { precision: curOptions.runtimePrecision }).add(
-      curRate
-    ).value
+  //   const addedRate = $number(1, { precision: curOptions.runtimePrecision }).add(
+  //     curRate
+  //   ).value
 
-    const rateCalculators: { [key in RateType]: (price: number) => number } = {
-      gst_free: () => 0,
-      incl_gst: (price) =>
-        $number(price, { precision: curOptions.runtimePrecision })
-          .divide(addedRate)
-          .multiply(curRate).value,
-      excl_gst: (price) =>
-        $number(price, { precision: curOptions.runtimePrecision }).multiply(curRate)
-          .value,
-    }
-    // 添加默认处理，防止访问不存在的键
-    const calculator = rateCalculators[curRateType as RateType]
-    if (!calculator) {
-      console.error(`Invalid rate type: ${curRateType}`)
-      return originPrice
-    }
-    finalRatePrice = $number(calculator(originPrice), {
-      precision: curOptions.precision,
-    }).value
-    this.calcCache.computeRate.set(cacheKey, finalRatePrice)
-    return finalRatePrice
-  }
+  //   const rateCalculators: { [key in RateType]: (price: number) => number } = {
+  //     gst_free: () => 0,
+  //     incl_gst: (price) =>
+  //       $number(price, { precision: curOptions.runtimePrecision })
+  //         .divide(addedRate)
+  //         .multiply(curRate).value,
+  //     excl_gst: (price) =>
+  //       $number(price, { precision: curOptions.runtimePrecision }).multiply(curRate)
+  //         .value,
+  //   }
+  //   // 添加默认处理，防止访问不存在的键
+  //   const calculator = rateCalculators[curRateType as RateType]
+  //   if (!calculator) {
+  //     console.error(`Invalid rate type: ${curRateType}`)
+  //     return originPrice
+  //   }
+  //   finalRatePrice = $number(calculator(originPrice), {
+  //     precision: curOptions.precision,
+  //   }).value
+  //   this.calcCache.computeRate.set(cacheKey, finalRatePrice)
+  //   return finalRatePrice
+  // }
 }
 
 // 导出单例实例

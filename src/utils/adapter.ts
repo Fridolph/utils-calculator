@@ -1,3 +1,5 @@
+import Decimal from "decimal.js"
+
 import Decimal from 'decimal.js'
 
 /**
@@ -14,7 +16,7 @@ import Decimal from 'decimal.js'
     crypto: false
   })
  */
-const defaultDecimalConfig: Decimal.Config = {
+export const defaultDecimalConfig: Decimal.Config = {
   precision: 10, // 暂时使用10位精度，可根据需求灵活调整
   rounding: 4, // 使用标准四舍五入 5进位 4舍去
   toExpNeg: -7,
@@ -25,23 +27,12 @@ const defaultDecimalConfig: Decimal.Config = {
   crypto: false,
 }
 
-export const isNumber = (value: unknown): value is number => {
-  try {
-    return Number(value) === value
-  } catch {
-    return false
-  }
-}
-
-export const isObject = (value: unknown): value is object => {
-  return !!value && value.constructor === Object
-}
-
 /**
  * 适配器模式：用于兼容其他底层计算库
  */
-export const $number = (value: number | string, userOptions?: NumberFormatOptions) => {
-  
-  const mergedOptions = Object.assign({}, defaultOptions, userOptions)
-  return Decimal(value)
+export const $number = (value: number, userOptions?: Decimal.Config) => {
+  const mergedOptions = Object.assign({}, defaultDecimalConfig, userOptions)
+
+  const DecInst = Decimal.clone(mergedOptions)
+  return DecInst(value)
 }
