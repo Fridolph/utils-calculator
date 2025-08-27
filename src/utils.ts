@@ -1,24 +1,28 @@
 import Decimal from 'decimal.js'
 
-export const defaultOptions: NumberFormatOptions = {
-  symbol: '',
-  separator: ',',
-  decimal: '.',
-  precision: 2,
-  pattern: '!#',
-  negativePattern: '-!#',
-}
-
+/**
+ * @remarks
+ * 官方使用的默认项参考 
+ * Decimal.set({
+    precision: 20,
+    rounding: 4,
+    toExpNeg: -7,
+    toExpPos: 21,
+    maxE: 9e15,
+    minE: -9e15,
+    modulo: 1,
+    crypto: false
+  })
+ */
 const defaultDecimalConfig: Decimal.Config = {
-  precision: 2,
-  rounding: 0,
-  toExpNeg: 0,
-  toExpPos: 0,
-  minE: 0,
-  maxE: 0,
-  crypto: 0,
-  modulo: 0,
-  defaults: 0,
+  precision: 10, // 暂时使用10位精度，可根据需求灵活调整
+  rounding: 4, // 使用标准四舍五入 5进位 4舍去
+  toExpNeg: -7,
+  toExpPos: 21,
+  maxE: 9e15,
+  minE: -9e15,
+  modulo: 1,
+  crypto: false,
 }
 
 export const isNumber = (value: unknown): value is number => {
@@ -37,6 +41,7 @@ export const isObject = (value: unknown): value is object => {
  * 适配器模式：用于兼容其他底层计算库
  */
 export const $number = (value: number | string, userOptions?: NumberFormatOptions) => {
-  const finalOptions = Object.assign({}, defaultOptions, userOptions)
+  
+  const mergedOptions = Object.assign({}, defaultOptions, userOptions)
   return Decimal(value)
 }
