@@ -523,16 +523,15 @@ export class Calculator {
       )
     }
 
-    let totalDecimal
     if (numbersToSum.length > 0) {
-    // 使用独立实例进行高精度计算
-      totalDecimal = new DecimalClone(0)
+      // 使用独立实例进行高精度计算
+      let totalDecimal = new DecimalClone(0)
       for (const num of numbersToSum) {
         totalDecimal = totalDecimal.add(new DecimalClone(num))
       }
+      total = totalDecimal?.toDecimalPlaces(mergedOptions.precision).toNumber() as number
     }
     // 使用 toDecimalPlaces(mergedOptions.precision) 控制小数位数
-    total = totalDecimal?.toDecimalPlaces(mergedOptions.precision).toNumber() as number
     this.calcCache.sum.set(cacheKey, total)
     return total
   }
