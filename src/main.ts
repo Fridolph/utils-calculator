@@ -377,16 +377,16 @@ export class Calculator {
       if (typeof obj !== 'object') return JSON.stringify(obj)
 
       if (Array.isArray(obj)) {
-        return '[' + obj.map(stableStringify).join(',') + ']'
+        return `[${obj.map(stableStringify).join(',')}]`
       }
 
       // 对普通对象按键排序后处理
       const sortedKeys = Object.keys(obj).sort()
       const pairs = sortedKeys.map((key) => {
-        return JSON.stringify(key) + ':' + stableStringify(obj[key])
+        return `${JSON.stringify(key)}:${stableStringify(obj[key])}`
       })
 
-      return '{' + pairs.join(',') + '}'
+      return `{${pairs.join(',')}}`
     }
 
     return stableStringify(data)
@@ -495,12 +495,12 @@ export class Calculator {
     let numbersToSum: number[] = []
 
     if (Array.isArray(data)) {
-      numbersToSum = data.filter((num) => isNumber(num) && !isNaN(num))
+      numbersToSum = data.filter((num) => isNumber(num) && !Number.isNaN(num))
     } else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
-        (value: unknown): value is number => isNumber(value) && !isNaN(value)
+        (value: unknown): value is number => isNumber(value) && !Number.isNaN(value)
       )
     }
 
@@ -617,7 +617,7 @@ export class Calculator {
       subtractValues = [subtractValues] as number[]
     }
 
-    if (!isNumber(initialValue) || isNaN(initialValue)) {
+    if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
       console.error('被减数应为 Number 类型, 这里一律处理为 0 继续计算')
       initialValue = 0
     }
@@ -1040,27 +1040,25 @@ export class Calculator {
     originPercentage: number | null,
     decimalPlaces?: number
   ): number | null {
-    let cacheKey
+    const cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
 
     if (decimalPlaces === null || (isNumber(decimalPlaces) && decimalPlaces < 0)) {
       console.error('参数 decimalPlaces 应为大于 0 的正数')
       return originPercentage
     }
 
-    cacheKey = this.generateCacheKey({ originPercentage, decimalPlaces })
-
     if (this.calcCache.percentToDecimal.has(cacheKey)) {
       return this.calcCache.percentToDecimal.get(cacheKey) as number | null
     }
     // 边界情况：传 null 默认不处理
-    if (originPercentage === null || isNaN(originPercentage)) return null
+    if (originPercentage === null || Number.isNaN(originPercentage)) return null
 
     const mergedOptions = this._getMergedOptions({
       precision: decimalPlaces ?? this.getOptions().precision,
     })
     // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
     // 最终的小数位数是要比传的多两位的
-    let handledPrecision
+    let handledPrecision: number = 2
     // 若传代码用户自己控制精度
     if (isNumber(decimalPlaces) && decimalPlaces >= 0) {
       handledPrecision = decimalPlaces
@@ -1181,10 +1179,10 @@ export class Calculator {
       originDecimal === null ||
       originDecimal === 0 ||
       decimalPlaces === null ||
-      isNaN(originDecimal)
+      Number.isNaN(originDecimal)
     )
       return 0
-    if (!isNumber(decimalPlaces) || isNaN(decimalPlaces)) {
+    if (!isNumber(decimalPlaces) || Number.isNaN(decimalPlaces)) {
       console.error(
         '参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字'
       )
@@ -1200,7 +1198,7 @@ export class Calculator {
         '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理'
       )
       decimalPlaces = 8
-    } else if (isNaN(decimalPlaces)) {
+    } else if (Number.isNaN(decimalPlaces)) {
       console.error(
         '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理'
       )
@@ -1328,8 +1326,8 @@ export class Calculator {
     if (
       originalPrice === null ||
       discountRate === null ||
-      isNaN(originalPrice) ||
-      isNaN(discountRate)
+      Number.isNaN(originalPrice) ||
+      Number.isNaN(discountRate)
     ) {
       return null
     }
@@ -1462,7 +1460,7 @@ export class Calculator {
   ): number {
     let finalRatePrice: number = 0
     // 边界处理：originPrice 为 null/0 返回 0
-    if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || isNaN(originPrice)) {
+    if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
       return 0
     }
     // 不处理 originPrice 为负的情况，价格应该为正
@@ -1480,7 +1478,7 @@ export class Calculator {
     let curRate: number
     if (userRate === undefined) {
       curRate = curOptions.taxRate
-    } else if (userRate === null || isNaN(userRate) || typeof userRate !== 'number') {
+    } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
       // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
       console.warn('userRate 无效，直接返回原始价格')
       return originPrice
