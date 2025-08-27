@@ -73,7 +73,7 @@ export class Calculator {
   private constructor() {
     this.calcCache = {
       sum: new Map(),
-      // subtractMultiple: new Map(),
+      subtractMultiple: new Map(),
       // calcUnitPrice: new Map(),
       // calcLinePrice: new Map(),
       // percentToDecimal: new Map(),
@@ -266,9 +266,9 @@ export class Calculator {
     if (cacheType === 'all' || cacheType === 'sum') {
       this.calcCache.sum.clear()
     }
-    // if (cacheType === 'all' || cacheType === 'subtractMultiple') {
-    //   this.calcCache.subtractMultiple.clear()
-    // }
+    if (cacheType === 'all' || cacheType === 'subtractMultiple') {
+      this.calcCache.subtractMultiple.clear()
+    }
     // if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
     //   this.calcCache.calcUnitPrice.clear()
     // }
@@ -287,9 +287,9 @@ export class Calculator {
     // if (cacheType === 'all' || cacheType === 'computeRate') {
     //   this.calcCache.computeRate.clear()
     // }
-    if (!cacheFnList.includes(cacheType)) {
-      console.warn(`Invalid cacheType: ${cacheType}`)
-    }
+    // if (!cacheFnList.includes(cacheType)) {
+    //   console.warn(`Invalid cacheType: ${cacheType}`)
+    // }
   }
 
   /**
@@ -339,26 +339,26 @@ export class Calculator {
   public queryCacheStat(cacheType: CacheType = 'all') {
     const cacheGroups = {
       sum: this.calcCache.sum,
-      // subtractMultiple: this.calcCache.subtractMultiple,
-      // calcUnitPrice: this.calcCache.calcUnitPrice,
-      // calcLinePrice: this.calcCache.calcLinePrice,
-      // percentToDecimal: this.calcCache.percentToDecimal,
-      // decimalToPercent: this.calcCache.decimalToPercent,
-      // calculateDiscountedPrice: this.calcCache.calculateDiscountedPrice,
-      // computeRate: this.calcCache.computeRate,
+      subtractMultiple: this.calcCache.subtractMultiple,
+      calcUnitPrice: this.calcCache.calcUnitPrice,
+      calcLinePrice: this.calcCache.calcLinePrice,
+      percentToDecimal: this.calcCache.percentToDecimal,
+      decimalToPercent: this.calcCache.decimalToPercent,
+      calculateDiscountedPrice: this.calcCache.calculateDiscountedPrice,
+      computeRate: this.calcCache.computeRate,
     }
 
     // const result: { [key in CacheType]: number } = {
     const result: { [key in CacheType]: number } = {
       all: 0,
       sum: 0,
-      // subtractMultiple: 0,
-      // calcUnitPrice: 0,
-      // calcLinePrice: 0,
-      // percentToDecimal: 0,
-      // decimalToPercent: 0,
-      // calculateDiscountedPrice: 0,
-      // computeRate: 0,
+      subtractMultiple: 0,
+      calcUnitPrice: 0,
+      calcLinePrice: 0,
+      percentToDecimal: 0,
+      decimalToPercent: 0,
+      calculateDiscountedPrice: 0,
+      computeRate: 0,
     }
 
     const cacheKeys =
@@ -628,53 +628,54 @@ export class Calculator {
    * expect(CalcInst.getCache().subtractMultiple.size).toBe(cacheSize + 1)
    * ```
    */
-  // public subtractMultiple(
-  //   initialValue: number,
-  //   subtractValues: number[] | number,
-  //   userOptions?: Partial<BaseOptions>
-  // ): number {
-  //   // 参数预处理
-  //   if (!Array.isArray(subtractValues)) {
-  //     subtractValues = [subtractValues] as number[]
-  //   }
+  public subtractMultiple(
+    initialValue: number,
+    subtractValues: number[] | number,
+    userOptions?: Partial<BaseOptions>
+  ): number {
+    const mergedOptions = this._getMergedOptions(userOptions)
+    // 创建独立配置的 Decimal 实例
+    const DecimalClone = Decimal.clone({
+      ...defaultDecimalConfig,
+      rounding: Decimal.ROUND_HALF_UP,
+    })
 
-  //   if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
-  //     console.error('被减数应为 Number 类型, 这里一律处理为 0 继续计算')
-  //     initialValue = 0
-  //   }
-  //   // 强制过滤非数字项 -> 即当成 0 来处理
-  //   // 注：'123' 字符串数字 也当作非法值，否则有歧义。使用者必须确保传入安全的 Number 类型
-  //   const filteredSubtractValues = subtractValues.filter((v: unknown) => isNumber(v))
+    const cacheKey = this.generateCacheKey({
+      initialValue,
+      subtractValues,
+      mergedOptions
+    })
 
-  //   const mergedOptions = this._getMergedOptions(userOptions)
+    // 边界处理：初始值非法时转为0
+    if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
+      initialValue = 0
+    }
 
-  //   /**
-  //    * @remarks fix [issues-2](https://github.com/Fridolph/utils-calculator/issues/2)
-  //    * 修改后：缓存键保持不变，但更明确地包含userOptions
-  //    */
-  //   const cacheKey = this.generateCacheKey({
-  //     initialValue,
-  //     subtractValue: filteredSubtractValues,
-  //     userOptions,
-  //   })
+    // 参数预处理：统一为数组
+    if (!Array.isArray(subtractValues)) {
+      subtractValues = [subtractValues] as number[]
+    }
 
-  //   if (this.calcCache.subtractMultiple.has(cacheKey)) {
-  //     return this.calcCache.subtractMultiple.get(cacheKey) as number
-  //   }
+    // 过滤非法减数项
+    const filteredSubtractValues = subtractValues.filter(
+      (v: unknown): v is number => isNumber(v)
+    )
 
-  //   // 复用 sum 方法计算减数总和，这样可以生成 sum 缓存项
-  //   // 不传递userOptions给sum方法，确保sum方法使用全局配置，避免创建额外的缓存项
-  //   const totalToSubtract = this.sum(filteredSubtractValues)
+    // 缓存命中处理
+    if (this.calcCache.subtractMultiple.has(cacheKey)) {
+      return this.calcCache.subtractMultiple.get(cacheKey) as number
+    }
+    let totalDecimal = new DecimalClone(initialValue)
+    for (const num of filteredSubtractValues) {
+      totalDecimal = totalDecimal.minus(new DecimalClone(num))
+    }
 
-  //   const result = $number(initialValue, {
-  //     precision: mergedOptions.runtimePrecision,
-  //   }).subtract(totalToSubtract).value
+    // 应用最终精度（保留 mergedOptions.precision 位小数）
+    const total = totalDecimal.toDecimalPlaces(mergedOptions.precision).toNumber()
+    this.calcCache.subtractMultiple.set(cacheKey, total)
 
-  //   const finalResult = $number(result, { precision: mergedOptions.precision }).value
-  //   this.calcCache.subtractMultiple.set(cacheKey, finalResult)
-
-  //   return finalResult
-  // }
+    return total
+  }
 
   /**
    * 基础公式: 单价 = 总价 / 数量
