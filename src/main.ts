@@ -24,7 +24,7 @@ const defaultUserOptions: UserOptions = {
   keepParamsMaxPrecision: true,
   // 最终计算输出结果 精确到的小数位数
   // 根据业务需求自行调整, -1 为保留原始计算值
-  outputDecimalPlaces: -1, 
+  outputDecimalPlaces: -1,
   taxRate: 0.1, // 折扣率 - 理解为 打九折
   rateType: 'incl_gst', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 incl_gst
 }
@@ -144,7 +144,10 @@ export class Calculator {
    *   .setUserOption('taxRate', 0.1)
    * ```
    */
-  public setUserOption<K extends keyof UserOptions>(option: K, value: UserOptions[K]): void {
+  public setUserOption<K extends keyof UserOptions>(
+    option: K,
+    value: UserOptions[K]
+  ): void {
     switch (option) {
       case 'outputDecimalPlaces':
         if (typeof value !== 'number' || value < 0 || value > 15) {
@@ -159,9 +162,13 @@ export class Calculator {
         }
         this.userOptions.taxRate = value
         break
-        
+
       case 'rateType':
-        const validRateTypes: readonly RateType[] = ['gst_free', 'incl_gst', 'excl_gst']
+        const validRateTypes: readonly RateType[] = [
+          'gst_free',
+          'incl_gst',
+          'excl_gst',
+        ]
         if (!validRateTypes.includes(value as RateType)) {
           throw new Error('Invalid RateType')
         }
@@ -187,16 +194,18 @@ export class Calculator {
    */
   public getThisDataMaxPrecision(dataStructure: unknown): number {
     const curUserOptions = this._getUserOptions()
-    const defaultPlaces = curUserOptions.keepParamsMaxPrecision ? -1 : curUserOptions.outputDecimalPlaces
+    const defaultPlaces = curUserOptions.keepParamsMaxPrecision
+      ? -1
+      : curUserOptions.outputDecimalPlaces
     if (Array.isArray(dataStructure)) {
       // 如果传入的是数组，遍历数组找到所有小数，并计算最大小数位数
-      return Math.max(...dataStructure.map(v => (getDecimalPlaces(v))))
-    }
-    else if (typeof dataStructure === 'object' && dataStructure !== null) {
+      return Math.max(...dataStructure.map((v) => getDecimalPlaces(v)))
+    } else if (typeof dataStructure === 'object' && dataStructure !== null) {
       // 如果传入的是对象，遍历对象的所有值找到所有小数，并计算最大小数位数
-      return Math.max(...Object.values(dataStructure).map(v => (getDecimalPlaces(v))))
-    }
-    else if (typeof dataStructure === 'number') {
+      return Math.max(
+        ...Object.values(dataStructure).map((v) => getDecimalPlaces(v))
+      )
+    } else if (typeof dataStructure === 'number') {
       // 如果传入的是数字
       if (dataStructure % 1 !== 0) {
         // 如果是小数，返回小数位数
@@ -435,7 +444,11 @@ export class Calculator {
   /**
    * 计算最终要保留的小数位数
    */
-  public _computeFinalDecimal(keepParamsMaxPrecision: boolean, curDigit: number, userDigit: number) {
+  public _computeFinalDecimal(
+    keepParamsMaxPrecision: boolean,
+    curDigit: number,
+    userDigit: number
+  ) {
     // console.log('_computeFinalDecimal', keepParamsMaxPrecision, curDigit, userDigit)
     if (keepParamsMaxPrecision) return userDigit
     return userDigit
@@ -446,7 +459,11 @@ export class Calculator {
     userOptions?: Partial<UserOptions>
   ): number {
     let mergedOptions = { ...this._getUserOptions() }
-    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+    if (
+      mergedOptions !== null &&
+      isObject(userOptions) &&
+      Object.keys(userOptions).length > 0
+    ) {
       Object.entries(userOptions).forEach(([key, val]) => {
         if (key in this.userOptions) {
           mergedOptions[key as keyof UserOptions] = val as any
@@ -465,15 +482,13 @@ export class Calculator {
 
     if (Array.isArray(data)) {
       numbersToSum = data.filter((num) => isNumber(num) && !isNaN(num))
-    }
-    else if (isObject(data)) {
+    } else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
         (value: unknown): value is number => isNumber(value) && !isNaN(value)
       )
-    }
-    else if (isNumber(data)) {
+    } else if (isNumber(data)) {
       numbersToSum = [data]
     }
 
@@ -487,13 +502,14 @@ export class Calculator {
       const finalDigitNumber = this._computeFinalDecimal(
         mergedOptions.keepParamsMaxPrecision,
         this.getThisDataMaxPrecision(data),
-        mergedOptions.outputDecimalPlaces,
+        mergedOptions.outputDecimalPlaces
       )
-      
+
       // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
-      total = finalDigitNumber === -1
-        ? totalDecimal.toNumber()
-        : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
+      total =
+        finalDigitNumber === -1
+          ? totalDecimal.toNumber()
+          : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
     }
 
     // 使用 toDecimalPlaces(mergedOptions.outputDecimalPlaces) 控制小数位数
@@ -508,7 +524,11 @@ export class Calculator {
     userOptions?: Partial<UserOptions>
   ): number {
     let mergedOptions = { ...this._getUserOptions() }
-    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+    if (
+      mergedOptions !== null &&
+      isObject(userOptions) &&
+      Object.keys(userOptions).length > 0
+    ) {
       Object.entries(userOptions).forEach(([key, val]) => {
         if (key in this.userOptions) {
           mergedOptions[key as keyof UserOptions] = val as any
@@ -551,9 +571,10 @@ export class Calculator {
     const finalDigitNumber = this._computeFinalDecimal(
       mergedOptions.keepParamsMaxPrecision,
       this.getThisDataMaxPrecision([initialValue, ...subtractValues]),
-      mergedOptions.outputDecimalPlaces,
+      mergedOptions.outputDecimalPlaces
     )
-    const total = finalDigitNumber === -1
+    const total =
+      finalDigitNumber === -1
         ? totalDecimal.toNumber()
         : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
 
@@ -589,7 +610,11 @@ export class Calculator {
     }
 
     let mergedOptions = { ...this._getUserOptions() }
-    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+    if (
+      mergedOptions !== null &&
+      isObject(userOptions) &&
+      Object.keys(userOptions).length > 0
+    ) {
       Object.entries(userOptions).forEach(([key, val]) => {
         if (key in this.userOptions) {
           mergedOptions[key as keyof UserOptions] = val as any
@@ -614,13 +639,14 @@ export class Calculator {
     const finalDigitNumber = this._computeFinalDecimal(
       mergedOptions.keepParamsMaxPrecision,
       this.getThisDataMaxPrecision(calcBaseTotalParams),
-      mergedOptions.outputDecimalPlaces,
+      mergedOptions.outputDecimalPlaces
     )
-      
+
     // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
-    finalUnitPrice = finalDigitNumber === -1
-      ? unitPriceDecimal.toNumber()
-      : unitPriceDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
+    finalUnitPrice =
+      finalDigitNumber === -1
+        ? unitPriceDecimal.toNumber()
+        : unitPriceDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
 
     const result = {
       quantity,
@@ -636,7 +662,10 @@ export class Calculator {
     calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'linePrice'>>,
     userOptions?: Partial<UserOptions>
   ): CalcBaseTotalParams {
-    let { quantity, unitPrice }: { quantity: number | null; unitPrice: number | null } =
+    let {
+      quantity,
+      unitPrice,
+    }: { quantity: number | null; unitPrice: number | null } =
       calcBaseTotalParams
     let finalLinePrice: number = 0
     // 明确边界处理逻辑，这里统一返回null
@@ -656,10 +685,15 @@ export class Calculator {
         linePrice: null,
       }
     }
-    if (quantity === null && unitPrice === null) return { quantity, unitPrice: null, linePrice: null }
+    if (quantity === null && unitPrice === null)
+      return { quantity, unitPrice: null, linePrice: null }
 
     let mergedOptions = { ...this._getUserOptions() }
-    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+    if (
+      mergedOptions !== null &&
+      isObject(userOptions) &&
+      Object.keys(userOptions).length > 0
+    ) {
       Object.entries(userOptions).forEach(([key, val]) => {
         if (key in this.userOptions) {
           mergedOptions[key as keyof UserOptions] = val as any
@@ -684,13 +718,14 @@ export class Calculator {
     const finalDigitNumber = this._computeFinalDecimal(
       mergedOptions.keepParamsMaxPrecision,
       this.getThisDataMaxPrecision(calcBaseTotalParams),
-      mergedOptions.outputDecimalPlaces,
+      mergedOptions.outputDecimalPlaces
     )
     // console.log('finalDigitNumber', finalDigitNumber)
 
-    finalLinePrice = finalDigitNumber === -1
-      ? linePriceDecimal.toNumber()
-      : linePriceDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
+    finalLinePrice =
+      finalDigitNumber === -1
+        ? linePriceDecimal.toNumber()
+        : linePriceDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
 
     const result = {
       quantity,
@@ -701,6 +736,90 @@ export class Calculator {
     return result
   }
 
+  public calculateDiscountedPrice(
+    originalPrice: number | null,
+    discountRate: number | null,
+    userOptions?: UserOptions
+  ): number | null {
+    let mergedOptions = { ...this._getUserOptions() }
+    if (
+      mergedOptions !== null &&
+      isObject(userOptions) &&
+      Object.keys(userOptions).length > 0
+    ) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        if (key in this.userOptions) {
+          mergedOptions[key as keyof UserOptions] = val as any
+        }
+      })
+    }
+    // 创建独立配置的 Decimal 实例
+    const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
+
+    const cacheKey = this.generateCacheKey({
+      originalPrice,
+      discountRate,
+      mergedOptions,
+    })
+
+    // 边界1 输入价格或折扣为null，统一不处理
+    if (
+      originalPrice === null ||
+      discountRate === null ||
+      isNaN(originalPrice) ||
+      isNaN(discountRate)
+    ) {
+      return null
+    }
+    // 边界2 若原始价格为负数，不处理直接返原价
+    if (isNumber(originalPrice) && originalPrice <= 0) {
+      console.warn('应确保传入参数 originalPrice 为一个正数')
+      return originalPrice
+    }
+    // 边界3 折扣为0，直接返原价
+    if (discountRate === 0) {
+      return originalPrice
+    }
+    // 边界4 折扣为1，（打满折）最终价为0
+    if (discountRate === 1) {
+      return 0
+    }
+    // 边界5 折扣率不能为负，直接返原价
+    if (isNumber(discountRate) && discountRate < 0) {
+      console.warn('折扣率 discountRate  应在 [0, 1] 之间')
+      return originalPrice
+    }
+
+    if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
+      return this.calcCache.calculateDiscountedPrice.get(cacheKey) as
+        | number
+        | null
+    }
+
+    // let totalDecimal = new DecimalClone(initialValue)
+    // for (const num of filteredSubtractValues) {
+    //   totalDecimal = totalDecimal.minus(new DecimalClone(num))
+    // }
+
+    // const finalDigitNumber = this._computeFinalDecimal(
+    //   mergedOptions.keepParamsMaxPrecision,
+    //   this.getThisDataMaxPrecision([initialValue, ...subtractValues]),
+    //   mergedOptions.outputDecimalPlaces
+
+    // TODO 继续完善相关计算逻辑
+    // const originDecimal = new DecimalClone(originalPrice)
+    // originDecimal.mul(discountRate)
+
+    // $number(originalPrice, {
+    //   precision: mergedOptions.runtimePrecision,
+    // }).multiply(discountRate).value
+    // const finalPrice = $number(originalPrice, {
+    //   precision: mergedOptions.runtimePrecision,
+    // }).subtract(ratePrice).value
+    // this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
+    // return $number(finalPrice, { precision: mergedOptions.outputDecimalPlaces })
+    //   .value
+  }
 }
 // public percentToDecimal(
 //   originPercentage: number | null,
@@ -793,56 +912,6 @@ export class Calculator {
 //   }).multiply(100).value
 //   this.calcCache.decimalToPercent.set(cacheKey, result)
 //   return $number(result, { precision: mergedOptions.outputDecimalPlaces }).value
-// }
-
-// public calculateDiscountedPrice(
-//   originalPrice: number | null,
-//   discountRate: number | null,
-//   userOptions?: UserOptions
-// ): number | null {
-//   const cacheKey = this.generateCacheKey({ originalPrice, discountRate })
-
-//   // 边界1 输入价格或折扣为null，统一不处理
-//   if (
-//     originalPrice === null ||
-//     discountRate === null ||
-//     isNaN(originalPrice) ||
-//     isNaN(discountRate)
-//   ) {
-//     return null
-//   }
-//   // 边界2 若原始价格为负数，不处理直接返原价
-//   if (isNumber(originalPrice) && originalPrice <= 0) {
-//     console.warn('应确保传入参数 originalPrice 为一个正数')
-//     return originalPrice
-//   }
-//   // 边界3 折扣为0，直接返原价
-//   if (discountRate === 0) {
-//     return originalPrice
-//   }
-//   // 边界4 折扣为1，（打满折）最终价为0
-//   if (discountRate === 1) {
-//     return 0
-//   }
-//   // 边界5 折扣率不能为负，直接返原价
-//   if (isNumber(discountRate) && discountRate < 0) {
-//     console.warn('折扣率 discountRate  应在 [0, 1] 之间')
-//     return originalPrice
-//   }
-
-//   if (this.calcCache.calculateDiscountedPrice.has(cacheKey)) {
-//     return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
-//   }
-
-//   const mergedOptions = this._getUserOptions(userOptions)
-//   const ratePrice = $number(originalPrice, {
-//     precision: mergedOptions.runtimePrecision,
-//   }).multiply(discountRate).value
-//   const finalPrice = $number(originalPrice, {
-//     precision: mergedOptions.runtimePrecision,
-//   }).subtract(ratePrice).value
-//   this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
-//   return $number(finalPrice, { precision: mergedOptions.outputDecimalPlaces }).value
 // }
 
 // public computeRate(
