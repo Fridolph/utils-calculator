@@ -1,10 +1,9 @@
 import { CalcInst } from '../../main'
 
-beforeEach(() => {
-  CalcInst.resetInstance()
-})
-
-describe.skip('calcLinePrice()', () => {
+describe('calcLinePrice()', () => {
+  beforeEach(() => {
+    CalcInst.resetInstance()
+  })
 
   // describe('debugger >>> 精度配置测试', () => {
 
@@ -138,8 +137,14 @@ describe.skip('calcLinePrice()', () => {
     it('应确保对象属性顺序不影响缓存键一致性', () => {
       const params1 = { quantity: 1, unitPrice: 2 }
       const params2 = { unitPrice: 2, quantity: 1 }
-      const key1 = CalcInst.generateCacheKey({ data: params1, mergedOptions: CalcInst._getUserOptions() })
-      const key2 = CalcInst.generateCacheKey({ data: params2, mergedOptions: CalcInst._getUserOptions() })
+      const key1 = CalcInst.generateCacheKey({
+        data: params1,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
+      const key2 = CalcInst.generateCacheKey({
+        data: params2,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
       expect(key1).toBe(key2)
     })
   })

@@ -1,7 +1,7 @@
 import { CalcInst } from '../../main'
 
 // ----------------- 减法测试模板 -----------------
-describe.skip('subtractMultiple()', () => {
+describe('subtractMultiple()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()
   })
@@ -47,7 +47,9 @@ describe.skip('subtractMultiple()', () => {
   describe('精度配置验证', () => {
     it('应使用方法级精度重写返回正确的值', () => {
       expect(CalcInst.subtractMultiple(10, [3.333], { outputDecimalPlaces: 0 })).toBe(7)
-      expect(CalcInst.subtractMultiple(10, [3.3333], { outputDecimalPlaces: 1 })).toBe(6.7)
+      expect(CalcInst.subtractMultiple(10, [3.3333], { outputDecimalPlaces: 1 })).toBe(
+        6.7
+      )
     })
 
     it('应按自身精度来返回正确的计算值', () => {
@@ -56,9 +58,13 @@ describe.skip('subtractMultiple()', () => {
     })
 
     it('当 0 作为被减数，进行一些高精度计算时，应返回正确的结果', () => {
-      expect(CalcInst.subtractMultiple(0, [0.0005], { outputDecimalPlaces: 3 })).toBe(-0.001)
+      expect(CalcInst.subtractMultiple(0, [0.0005], { outputDecimalPlaces: 3 })).toBe(
+        -0.001
+      )
       expect(CalcInst.subtractMultiple(0, 0.1115)).toBe(-0.1115)
-      expect(CalcInst.subtractMultiple(0, 0.1115, { outputDecimalPlaces: 3 })).toBe(-0.112)
+      expect(CalcInst.subtractMultiple(0, 0.1115, { outputDecimalPlaces: 3 })).toBe(
+        -0.112
+      )
     })
   })
 

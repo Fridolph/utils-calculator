@@ -1,15 +1,12 @@
 import { CalcInst } from '../../main'
 
-describe.skip('sum()', () => {
+describe('sum()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()
   })
 
-  describe('debugger >>> 异常输入 及 边界处理', () => {
+  describe('debugger >>> 异常输入 及 边界处理', () => {})
 
-  })
-
-  
   describe('正常加法运算', () => {
     it('数组求和 [1, 2, 3] -> 6', () => {
       expect(CalcInst.sum([1, 2, 3])).toBe(6)
@@ -29,11 +26,10 @@ describe.skip('sum()', () => {
     })
   })
 
-  describe('极端输入处理', () => { 
+  describe('极端输入处理', () => {
     it('计算超小值，科学计数法的小数', () => {
       expect(CalcInst.sum([0.0000000001, 0.0000000002])).toBe(3e-10) // 0.0000000003 科学计数法 3e-10
     })
-
 
     it('可处理原始值为多位小数的数字', () => {
       expect(CalcInst.sum(56.6666666555)).toBe(56.6666666555)
@@ -44,7 +40,7 @@ describe.skip('sum()', () => {
       expect(CalcInst.sum({ a: 1.1111111, b: 2.22222, c: 3.33333 })).toBe(6.6666611)
     })
   })
-  
+
   describe('异常输入 及 边界处理', () => {
     it('空数组 返0', () => {
       expect(CalcInst.sum([])).toBe(0)
@@ -59,7 +55,7 @@ describe.skip('sum()', () => {
       expect(CalcInst.sum([1, '2' as any, true, 3])).toBe(4)
       expect(CalcInst.sum([true as any, false as any])).toBe(0) // true=1, false=0 但被过滤
     })
-    
+
     it('当总和数据包含非数值时，应返回正确的值', () => {
       expect(CalcInst.sum([1, '2' as any, true, 3])).toBe(4)
     })
@@ -96,20 +92,29 @@ describe.skip('sum()', () => {
     })
 
     it('手动设置输出位数测试', () => {
-      expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { outputDecimalPlaces: 4 })).toBe(6.6666) // 0.6666
+      expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { outputDecimalPlaces: 4 })).toBe(
+        6.6666
+      ) // 0.6666
       // expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { outputDecimalPlaces: 3 })).toBe(6.667) // 0.6666
     })
-    
+
     it('用户指定输出位数，小于默认位数时，优先输出用户指定位数', () => {
-      expect(CalcInst.sum([1.111111, 2.222222, 3.333333], { outputDecimalPlaces: 2 })).toBe(6.67)
+      expect(
+        CalcInst.sum([1.111111, 2.222222, 3.333333], { outputDecimalPlaces: 2 })
+      ).toBe(6.67)
     })
-    
+
     it('没有指定，最终按默认2位进行四舍五入', () => {
       expect(CalcInst.sum([1.11555, 2.22255])).toBe(3.3381) // 1.11555 + 2.22255 = 3.3381
     })
-    
+
     it('应返回具有高精度输入的正确值', () => {
-      expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { keepParamsMaxPrecision: false, outputDecimalPlaces: 3 })).toBe(6.667) // 6.6666 -> 6.667
+      expect(
+        CalcInst.sum([1.1111, 2.2222, 3.3333], {
+          keepParamsMaxPrecision: false,
+          outputDecimalPlaces: 3,
+        })
+      ).toBe(6.667) // 6.6666 -> 6.667
     })
 
     it('应正确处理精度为0时的整数计算', () => {
@@ -153,8 +158,14 @@ describe.skip('sum()', () => {
     it('应确保对象属性顺序不影响缓存键一致性', () => {
       const obj1 = { a: 1, b: 2 }
       const obj2 = { b: 2, a: 1 }
-      const key1 = CalcInst.generateCacheKey({ data: obj1, mergedOptions: CalcInst._getUserOptions() })
-      const key2 = CalcInst.generateCacheKey({ data: obj2, mergedOptions: CalcInst._getUserOptions() })
+      const key1 = CalcInst.generateCacheKey({
+        data: obj1,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
+      const key2 = CalcInst.generateCacheKey({
+        data: obj2,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
       expect(key1).toBe(key2)
     })
   })
