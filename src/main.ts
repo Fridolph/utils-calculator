@@ -507,12 +507,16 @@ export class Calculator {
     subtractValues: number[] | number,
     userOptions?: Partial<UserOptions>
   ): number {
-    const mergedOptions = this._getUserOptions(userOptions)
+    let mergedOptions = { ...this._getUserOptions() }
+    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        if (key in this.userOptions) {
+          mergedOptions[key as keyof UserOptions] = val as any
+        }
+      })
+    }
     // 创建独立配置的 Decimal 实例
-    const DecimalClone = Decimal.clone({
-      ...defaultDecimalConfigs,
-      rounding: Decimal.ROUND_HALF_UP,
-    })
+    const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
 
     const cacheKey = this.generateCacheKey({
       initialValue,
@@ -544,12 +548,14 @@ export class Calculator {
       totalDecimal = totalDecimal.minus(new DecimalClone(num))
     }
 
-    // 根据 keepParamsMaxPrecision 决定是否保留完整精度
-    const total = mergedOptions.keepParamsMaxPrecision
-      ? totalDecimal.toNumber()
-      : totalDecimal
-          .toDecimalPlaces(mergedOptions.outputDecimalPlaces)
-          .toNumber()
+    const finalDigitNumber = this._computeFinalDecimal(
+      mergedOptions.keepParamsMaxPrecision,
+      this.getThisDataMaxPrecision([initialValue, ...subtractValues]),
+      mergedOptions.outputDecimalPlaces,
+    )
+    const total = finalDigitNumber === -1
+        ? totalDecimal.toNumber()
+        : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
 
     this.calcCache.subtractMultiple.set(cacheKey, total)
     return total
@@ -557,7 +563,7 @@ export class Calculator {
 
   public calcUnitPrice(
     calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
-    userOptions?: UserOptions
+    userOptions?: Partial<UserOptions>
   ): CalcBaseTotalParams {
     const { quantity, linePrice } = calcBaseTotalParams
     let finalUnitPrice: number | null = null
@@ -582,11 +588,16 @@ export class Calculator {
       return { quantity: 0, unitPrice: linePrice, linePrice }
     }
 
-    const mergedOptions = this._getUserOptions(userOptions)
-    const DecimalClone = Decimal.clone({
-      ...defaultDecimalConfigs,
-      rounding: Decimal.ROUND_HALF_UP,
-    })
+    let mergedOptions = { ...this._getUserOptions() }
+    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        if (key in this.userOptions) {
+          mergedOptions[key as keyof UserOptions] = val as any
+        }
+      })
+    }
+
+    const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
     const cacheKey = this.generateCacheKey({
       calcBaseTotalParams,
       mergedOptions,
@@ -600,17 +611,23 @@ export class Calculator {
     const linePriceDecimal = new DecimalClone(linePrice)
     const unitPriceDecimal = linePriceDecimal.dividedBy(quantityDecimal)
 
-    finalUnitPrice = mergedOptions.keepParamsMaxPrecision
+    const finalDigitNumber = this._computeFinalDecimal(
+      mergedOptions.keepParamsMaxPrecision,
+      this.getThisDataMaxPrecision(calcBaseTotalParams),
+      mergedOptions.outputDecimalPlaces,
+    )
+      
+    // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
+    finalUnitPrice = finalDigitNumber === -1
       ? unitPriceDecimal.toNumber()
-      : unitPriceDecimal
-          .toDecimalPlaces(mergedOptions.outputDecimalPlaces)
-          .toNumber()
+      : unitPriceDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
 
     const result = {
       quantity,
       unitPrice: finalUnitPrice,
       linePrice,
     }
+
     this.calcCache.calcUnitPrice.set(cacheKey, result)
     return result
   }

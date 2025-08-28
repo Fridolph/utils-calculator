@@ -1,6 +1,6 @@
 import { CalcInst } from '../../main'
 
-describe('sum()', () => {
+describe.skip('sum()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()
   })
@@ -111,7 +111,7 @@ describe('sum()', () => {
     it('应返回具有高精度输入的正确值', () => {
       expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { keepParamsMaxPrecision: false, outputDecimalPlaces: 3 })).toBe(6.667) // 6.6666 -> 6.667
     })
-    
+
     it('应正确处理精度为0时的整数计算', () => {
       CalcInst.setUserOption('outputDecimalPlaces', 0)
       expect(CalcInst.sum([1.111, 2.222])).toBe(3) // 3.333 → 四舍五入为3

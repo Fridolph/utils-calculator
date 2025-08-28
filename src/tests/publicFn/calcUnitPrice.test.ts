@@ -114,8 +114,7 @@ describe('calcUnitPrice()', () => {
     })
 
     it('验证更高位小数的四舍五入处理', () => {
-      CalcInst.setUserOption('outputDecimalPlaces', 3)
-      expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 } as CalcBaseTotalParams, { precision: 3 })).toEqual(
+      expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 } as CalcBaseTotalParams, { outputDecimalPlaces: 3 })).toEqual(
         {
           quantity: 3,
           unitPrice: 3.334, // 10.0005 / 3 = 3.3335000000000004 -> 3.334
@@ -123,7 +122,7 @@ describe('calcUnitPrice()', () => {
         }
       )
 
-      expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 } as CalcBaseTotalParams, { precision: 2 })).toEqual(
+      expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 } as CalcBaseTotalParams, { outputDecimalPlaces: 2 })).toEqual(
         {
           quantity: 3,
           unitPrice: 3.33, // 10.0005 / 3 = 3.3335000000000004 -> 3.334
@@ -138,7 +137,7 @@ describe('calcUnitPrice()', () => {
       expect(
         CalcInst.calcUnitPrice(
           { quantity: 3, linePrice: 10 } as CalcBaseTotalParams,
-          { precision: 1 } as BaseOptions, // 方法级配置优先级更高
+          { outputDecimalPlaces: 1 } as Partial<UserOptions>, // 方法级配置优先级更高
         )
       ).toEqual({
         quantity: 3,
@@ -150,19 +149,19 @@ describe('calcUnitPrice()', () => {
     })
   })
 
-  // describe('缓存机制测试', () => { 
-  //   it('初次计算生成缓存，重复计算，应命中缓存', () => {
-  //     const input = { quantity: 5, linePrice: 25 } as CalcBaseTotalParams
+  describe('缓存机制测试', () => { 
+    it('初次计算生成缓存，重复计算，应命中缓存', () => {
+      const input = { quantity: 5, linePrice: 25 } as CalcBaseTotalParams
   
-  //     // 第一次调用生成缓存
-  //     CalcInst.calcUnitPrice(input)
-  //     // 第二次相同输入应命中缓存
-  //     CalcInst.calcUnitPrice(input)
+      // 第一次调用生成缓存
+      CalcInst.calcUnitPrice(input)
+      // 第二次相同输入应命中缓存
+      CalcInst.calcUnitPrice(input)
   
-  //     // 验证generateCacheKey调用次数
-  //     expect(CalcInst.queryCacheStat('calcUnitPrice').calcUnitPrice).toBe(1)
+      // 验证generateCacheKey调用次数
+      expect(CalcInst.queryCacheStat('calcUnitPrice').calcUnitPrice).toBe(1)
   
-  //     CalcInst.clearCache('calcUnitPrice')
-  //   })
-  // })
+      CalcInst.clearCache('calcUnitPrice')
+    })
+  })
 })
