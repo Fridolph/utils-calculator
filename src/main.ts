@@ -13,20 +13,25 @@
  */
 import Decimal from 'decimal.js'
 import { isNumber, isObject, isNaN } from './utils/type'
+import { getDecimalPlaces } from './utils/string'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
  */
-const defaultBaseOptions: BaseOptions = {
-  precision: 2, // 默认计算保留2位小数 - 根据业务需求自行调整
-  runtimePrecision: 10, // 不可修改, 计算时以10位小数来计算保留10位精度
+const defaultUserOptions: UserOptions = {
+  // 是否保留计算结果的精度，如 0.22225 + 0.22225 = 0.4445
+  // 若不保留，按默认 precision: 2 来呈现最终结果 -> 0.44
+  keepParamsMaxPrecision: true,
+  // 最终计算输出结果 精确到的小数位数
+  // 根据业务需求自行调整, -1 为保留原始计算值
+  outputDecimalPlaces: -1, 
   taxRate: 0.1, // 折扣率 - 理解为 打九折
   rateType: 'incl_gst', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 incl_gst
 }
 
-const defaultDecimalConfig: Decimal.Config = {
-  precision: 10, // 暂时使用10位精度，可根据需求灵活调整
-  rounding: 4, // 使用标准四舍五入 5进位 4舍去
+const defaultDecimalConfigs: Decimal.Config = {
+  precision: 20, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
+  rounding: Decimal.ROUND_HALF_UP, // 使用标准四舍五入 5进位 4舍去
   toExpNeg: -7,
   toExpPos: 21,
   maxE: 9e15,
@@ -67,7 +72,8 @@ const cacheFnList = [
 export class Calculator {
   // 性能考量：使用单例模式
   private static instance: Calculator
-  public baseOptions: BaseOptions
+  public userOptions: UserOptions
+  public calcConfigs: Decimal.Config
   // 性能考虑：将每次的计算结果进行缓存，若有同类型的计算，可直接返回缓存结果
   public calcCache: CacheStore
 
@@ -82,7 +88,14 @@ export class Calculator {
       // calculateDiscountedPrice: new Map(),
       // computeRate: new Map(),
     }
-    this.baseOptions = defaultBaseOptions
+    this.userOptions = defaultUserOptions
+    this.calcConfigs = defaultDecimalConfigs
+  }
+
+  public resetInstance() {
+    this.clearCache()
+    this.userOptions = defaultUserOptions
+    this.calcConfigs = defaultDecimalConfigs
   }
 
   /**
@@ -91,24 +104,24 @@ export class Calculator {
    *
    * @example 设置精度
    * ```ts
-   * CalcInst.setOption('precision', 3) // 设置计算精度为3位小数
-   * CalcInst.setOption('precision', 0) // 禁用小数计算
+   * CalcInst.setUserOption('outputDecimalPlaces', 3) // 设置计算精度为3位小数
+   * CalcInst.setUserOption('outputDecimalPlaces', 0) // 禁用小数计算
    * ```
    *
    * @example 设置税率
    * ```ts
-   * CalcInst.setOption('taxRate', 0.15) // 设置15%税率
-   * CalcInst.setOption('taxRate', 0) // 免税场景
+   * CalcInst.setUserOption('taxRate', 0.15) // 设置15%税率
+   * CalcInst.setUserOption('taxRate', 0) // 免税场景
    * ```
    *
    * @example 设置计税模式
    * ```ts
-   * CalcInst.setOption('rateType', 'gst_free') // 税种无关计算
-   * CalcInst.setOption('rateType', 'excl_gst') // 含税计算模式
+   * CalcInst.setUserOption('rateType', 'gst_free') // 税种无关计算
+   * CalcInst.setUserOption('rateType', 'excl_gst') // 含税计算模式
    * ```
    *
    * @param option - 配置项名称，可选值：
-   * - 'precision'：调整计算精度（0-8位小数）
+   * - 'precision'：调整计算精度（0-15位小数）
    * - 'taxRate'：设置税率（0-1之间的小数）
    * - 'rateType'：指定税率类型（'gst_free'|'incl_gst'|'excl_gst'）
    *
@@ -127,32 +140,29 @@ export class Calculator {
    * 该方法支持链式调用，典型用法：
    * ```ts
    * CalcInst
-   *   .setOption('precision', 3)
-   *   .setOption('taxRate', 0.1)
+   *   .setUserOption('outputDecimalPlaces', 3)
+   *   .setUserOption('taxRate', 0.1)
    * ```
    */
-  public setOption(
-    option: keyof Omit<BaseOptions, 'runtimePrecision'>,
-    value: unknown
-  ): void {
+  public setUserOption(option: keyof UserOptions, value: unknown): void {
     switch (option) {
-      case 'precision':
-        if (isNumber(value) && value >= 0 && value <= 8) {
-          this.baseOptions.precision = value
+      case 'outputDecimalPlaces':
+        if (isNumber(value) && value >= 0 && value <= 15) {
+          this.userOptions.outputDecimalPlaces = value
         } else {
-          throw new Error('Precision must be a number between 0 and 8')
+          throw new Error('Precision must be a number between 0 and 15')
         }
         break
       case 'taxRate':
         if (isNumber(value) && value >= 0 && value <= 1) {
-          this.baseOptions.taxRate = value
+          this.userOptions.taxRate = value
         } else {
           throw new Error('Tax rate must be a number between 0 and 1')
         }
         break
       case 'rateType':
         if (['gst_free', 'incl_gst', 'excl_gst'].includes(value as string)) {
-          this.baseOptions.rateType = value as RateType
+          this.userOptions.rateType = value as RateType
         } else {
           throw new Error('Invalid RateType')
         }
@@ -162,26 +172,43 @@ export class Calculator {
     }
   }
 
-  public getOptions(): BaseOptions {
-    return this.baseOptions
+  public _getCalcConfigs() {
+    return this.calcConfigs
   }
 
-  public _getMergedOptions(userOptions?: Partial<BaseOptions>) {
-    const curOptions = this.getOptions()
-    if (isObject(userOptions)) {
-      return {
-        ...Object.assign({}, curOptions, userOptions),
-        runtimePrecision: curOptions.runtimePrecision, // 确保 runtimePrecision 不被覆盖
-      }  
+  public _getUserOptions() {
+    return this.userOptions
+  }
+
+  /**
+   * 处理保留参数最大精度逻辑
+   * @param dataStructure - 输入的数据结构，可以是数组、对象、数字或其他未知类型
+   * @returns - 返回数据结构中数字的最大小数位数，如果没有小数则返回默认值
+   */
+  public getThisDataMaxPrecision(dataStructure: unknown): number {
+    const curUserOptions = this._getUserOptions()
+    const defaultPlaces = curUserOptions.keepParamsMaxPrecision ? -1 : curUserOptions.outputDecimalPlaces
+    if (Array.isArray(dataStructure)) {
+      // 如果传入的是数组，遍历数组找到所有小数，并计算最大小数位数
+      return Math.max(...dataStructure.map(v => (getDecimalPlaces(v))))
     }
-    else {
-      return {
-        precision: curOptions.precision,
-        taxRate: curOptions.taxRate,
-        rateType: curOptions.rateType,
-        runtimePrecision: curOptions.runtimePrecision,
+    else if (typeof dataStructure === 'object' && dataStructure !== null) {
+      // 如果传入的是对象，遍历对象的所有值找到所有小数，并计算最大小数位数
+      return Math.max(...Object.values(dataStructure).map(v => (getDecimalPlaces(v))))
+    }
+    else if (typeof dataStructure === 'number') {
+      // 如果传入的是数字
+      if (dataStructure % 1 !== 0) {
+        // 如果是小数，返回小数位数
+        return getDecimalPlaces(dataStructure)
+      } else {
+        // 如果是整数，返回默认值
+        return defaultPlaces
       }
     }
+
+    // 如果传入的是其他非法值，返回默认值
+    return defaultPlaces
   }
 
   /**
@@ -406,104 +433,25 @@ export class Calculator {
   }
 
   /**
-   * 价格加总计算方法
-   * @remarks
-   * 支持数组和对象类型的数值聚合，提供高精度计算和缓存优化机制，适用于金融、电商等场景的金额汇总需求
-   *
-   * @param data - 待求和的数据源，支持以下格式：
-   * - 数值数组：`[1, 2, 3]`
-   * - 键值对象：`{ a: 1, b: 2, c: 3 }`
-   * - 混合类型数组（会自动过滤非法值）：`[1, '2' as any, true, 3]`
-   *
-   * @param userOptions - 可选参数，用于配置计算行为：
-   * - 最终结果保留的小数位数（0-8）
-   * - 运行时计算精度（不可修改，预设为8）
-   *
-   * @returns 计算后的总和：
-   * - 数组元素为null/NaN时自动忽略
-   * - 对象值为null/NaN时自动忽略
-   * - 所有元素非法时返回0
-   * - 默认保留2位小数（可通过setOption修改全局配置）
-   *
-   * @example
-   * ```ts
-   * // 基础用法
-   * CalcInst.sum([1, 2, 3]) // 6
-   * CalcInst.sum([10, -5, 3.5]) // 8.5
-   *
-   * // 对象求和
-   * CalcInst.sum({ a: 1, b: 2, c: 3 }) // 6
-   * CalcInst.sum({ x: 10, y: null as any, z: 5 }) // 15
-   *
-   * // 精度控制
-   * CalcInst.sum([1.1111, 2.2222, 3.3333], { precision: 3 }) // 6.667
-   * CalcInst.sum([1.11555, 2.22255]) // 3.338（保留3位小数时四舍五入）
-   *
-   * // 边界值处理
-   * CalcInst.sum([null, undefined, 5, 'abc' as any]) // 5
-   * CalcInst.sum([0.0005, 0.0005]) // 0.001
-   * ```
-   *
-   * @performance
-   * 时间复杂度：O(n) 其中n为有效数值个数
-   * 内部采用currency.js进行高精度计算，缓存机制避免重复计算
-   *
-   * @errorHandling
-   * 自动处理以下异常情况：
-   * - 空数组输入：返回0
-   * - 数组元素全为null/NaN：返回0
-   * - 对象值全为null/NaN：返回0
-   * - 非数字类型自动过滤：'123'、true、null等非法值
-   *
-   * @caching
-   * 缓存键生成策略：
-   * - 基于数据内容和mergedOptions生成唯一键
-   * - 相同输入保证缓存命中
-   * - 缓存清理：`CalcInst.clearCache('sum')`
-   *
-   * @precision
-   * 精度处理规则：
-   * 1. 先应用方法级precision配置
-   * 2. 无方法级配置时使用全局precision
-   * 3. 运行时计算始终使用8位精度（runtimePrecision）
-   * 4. 结果输出时根据precision配置四舍五入
-   *
-   * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
-   *
-   * @testCases
-   * ```ts
-   * // 数值数组计算
-   * expect(CalcInst.sum([1, 2, 3])).toBe(6)
-   *
-   * // 包含负数的数组
-   * expect(CalcInst.sum([10, -5, 3.5])).toBe(8.5)
-   *
-   * // 对象求和（含null值）
-   * expect(CalcInst.sum({ x: 10, y: null as any, z: 5 })).toBe(15)
-   *
-   * // 非数字值过滤
-   * expect(CalcInst.sum([1, '2' as any, true, 3])).toBe(4)
-   *
-   * // 精度配置测试
-   * expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { precision: 3 })).toBe(6.667)
-   *
-   * // 缓存验证
-   * const cacheSize = CalcInst.getCache().sum.size
-   * CalcInst.sum([1,2,3,4,5])
-   * expect(CalcInst.getCache().sum.size).toBe(cacheSize + 1)
-   * ```
+   * 计算最终要保留的小数位数
    */
+  public _computeFinalDecimal(keepParamsMaxPrecision: boolean, curDigit: number, userDigit: number) {
+    // console.log('_computeFinalDecimal', keepParamsMaxPrecision, curDigit, userDigit)
+    if (keepParamsMaxPrecision) return userDigit
+    return userDigit
+  }
+
   public sum(
-    data: number[] | { [key: string]: number },
-    userOptions?: Partial<BaseOptions>
+    data: number | number[] | { [key: string]: number },
+    userOptions?: Partial<UserOptions>
   ): number {
-    const mergedOptions = this._getMergedOptions(userOptions)
-      // ✅ 修复点1：运行时使用高精度，不设置 precision
-    const DecimalClone = Decimal.clone({
-      ...defaultDecimalConfig,
-      rounding: Decimal.ROUND_HALF_UP,
-    })
+    let mergedOptions = this._getUserOptions()
+    if (isObject(userOptions)) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        mergedOptions[key] = val
+      })
+    }
+    const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
 
     const cacheKey = this.generateCacheKey({ data, mergedOptions })
     if (this.calcCache.sum.has(cacheKey)) {
@@ -523,6 +471,9 @@ export class Calculator {
         (value: unknown): value is number => isNumber(value) && !isNaN(value)
       )
     }
+    else if (isNumber(data)) {
+      numbersToSum = [data]
+    }
 
     if (numbersToSum.length > 0) {
       // 使用独立实例进行高精度计算
@@ -530,120 +481,41 @@ export class Calculator {
       for (const num of numbersToSum) {
         totalDecimal = totalDecimal.add(new DecimalClone(num))
       }
-      total = totalDecimal?.toDecimalPlaces(mergedOptions.precision).toNumber() as number
+
+      const finalDigitNumber = this._computeFinalDecimal(
+        mergedOptions.keepParamsMaxPrecision,
+        this.getThisDataMaxPrecision(data),
+        mergedOptions.outputDecimalPlaces,
+      )
+      // console.log('finalDigitNumber', finalDigitNumber)
+      // 新增逻辑：根据 keepParamsMaxPrecision 决定是否保留完整精度
+      total = finalDigitNumber === -1
+        ? totalDecimal.toNumber()
+        : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
     }
-    // 使用 toDecimalPlaces(mergedOptions.precision) 控制小数位数
+
+    // 使用 toDecimalPlaces(mergedOptions.outputDecimalPlaces) 控制小数位数
     this.calcCache.sum.set(cacheKey, total)
+
     return total
   }
 
-  /**
-   * 从初始值中减去多个值
-   * @remarks
-   * 支持链式减法运算和缓存优化，适用于金融场景的金额计算
-   *
-   * @param initialValue - 初始值（被减数），支持以下处理：
-   * - null/NaN：自动转为0继续计算
-   * - 非数字类型：强制转为0（如字符串'abc'、布尔值等）
-   *
-   * @param subtractValues - 减数列表，支持以下格式：
-   * - 单个数字：`8.88`（自动转为数组）
-   * - 数值数组：`[1, 2, 3]`
-   * - 混合类型数组（过滤非法值）：`[5, '10', true]`
-   *
-   * @param userOptions - 可选参数，用于配置计算行为：
-   * - 最终结果保留的小数位数（0-8）
-   * - 运行时计算精度（预设为8位）
-   *
-   * @returns 减法运算结果：
-   * - 初始值非法时返回0（如'abc'、NaN等）
-   * - 减数列表为空时返回初始值
-   * - 非数字减数自动过滤
-   * - 默认保留2位小数（可通过setOption修改全局配置）
-   *
-   * @example
-   * ```ts
-   * // 基础用法
-   * CalcInst.subtractMultiple(9.99, [8.88]) // 1.11
-   * CalcInst.subtractMultiple(15, [1,2,3,4]) // 5
-   *
-   * // 处理非数字减数
-   * CalcInst.subtractMultiple(20, [5, '10', true]) // 15（过滤非法值）
-   * CalcInst.subtractMultiple(30, [10, null]) // 20
-   *
-   * // 精度控制
-   * CalcInst.setOption('precision', 3)
-   * CalcInst.subtractMultiple(10, [3.333]) // 6.667
-   * CalcInst.subtractMultiple(5, [1.111, 1.111]) // 2.778
-   *
-   * // 边界值处理
-   * CalcInst.subtractMultiple(null, [5]) // -5（初始值非法转为0-5）
-   * CalcInst.subtractMultiple(0, [0.0005]) // -0.001（保留3位小数时四舍五入）
-   * ```
-   *
-   * @performance
-   * 时间复杂度：O(n) 其中n为有效减数个数
-   * 内部采用currency.js进行高精度计算，缓存机制避免重复计算
-   *
-   * @errorHandling
-   * 自动处理以下异常情况：
-   * - 初始值为null/NaN：转为0继续计算
-   * - 减数列表包含非法值：自动过滤
-   * - 空数组作为减数：返回初始值
-   * - 非数字减数处理：转为0（如字符串'abc'）
-   *
-   * @caching
-   * 缓存键生成策略：
-   * - 基于initialValue和subtractValues生成唯一键
-   * - 相同输入保证缓存命中
-   * - 缓存清理：`CalcInst.clearCache('subtractMultiple')`
-   *
-   * @precision
-   * 精度处理规则：
-   * 1. 先应用方法级precision配置
-   * 2. 无方法级配置时使用全局precision
-   * 3. 运行时计算始终使用8位精度（runtimePrecision）
-   * 4. 结果输出时根据precision配置四舍五入
-   *
-   * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
-   *
-   * @testCases
-   * ```ts
-   * // 基本减法
-   * expect(CalcInst.subtractMultiple(9.99, [8.88])).toBe(1.11)
-   *
-   * // 空减数数组
-   * expect(CalcInst.subtractMultiple(50, [])).toBe(50)
-   *
-   * // 非数字值过滤
-   * expect(CalcInst.subtractMultiple(20, [5, '10', true])).toBe(15)
-   *
-   * // 零值处理
-   * expect(CalcInst.subtractMultiple(0, [5])).toBe(-5)
-   *
-   * // 缓存验证
-   * const cacheSize = CalcInst.getCache().subtractMultiple.size
-   * CalcInst.subtractMultiple(100, [10, 20, 30])
-   * expect(CalcInst.getCache().subtractMultiple.size).toBe(cacheSize + 1)
-   * ```
-   */
   public subtractMultiple(
     initialValue: number,
     subtractValues: number[] | number,
-    userOptions?: Partial<BaseOptions>
+    userOptions?: Partial<UserOptions>
   ): number {
-    const mergedOptions = this._getMergedOptions(userOptions)
+    const mergedOptions = this._getUserOptions(userOptions)
     // 创建独立配置的 Decimal 实例
     const DecimalClone = Decimal.clone({
-      ...defaultDecimalConfig,
+      ...defaultDecimalConfigs,
       rounding: Decimal.ROUND_HALF_UP,
     })
 
     const cacheKey = this.generateCacheKey({
       initialValue,
       subtractValues,
-      mergedOptions
+      mergedOptions,
     })
 
     // 边界处理：初始值非法时转为0
@@ -670,108 +542,20 @@ export class Calculator {
       totalDecimal = totalDecimal.minus(new DecimalClone(num))
     }
 
-    // 应用最终精度（保留 mergedOptions.precision 位小数）
-    const total = totalDecimal.toDecimalPlaces(mergedOptions.precision).toNumber()
-    this.calcCache.subtractMultiple.set(cacheKey, total)
+    // 根据 keepParamsMaxPrecision 决定是否保留完整精度
+    const total = mergedOptions.keepParamsMaxPrecision
+      ? totalDecimal.toNumber()
+      : totalDecimal
+          .toDecimalPlaces(mergedOptions.outputDecimalPlaces)
+          .toNumber()
 
+    this.calcCache.subtractMultiple.set(cacheKey, total)
     return total
   }
 
-  /**
-   * 基础公式: 单价 = 总价 / 数量
-   * @remarks
-   * 支持多种边界场景处理和高精度计算，适用于电商、金融等场景的单价计算需求
-   *
-   * @param calcBaseTotalParams - 计算参数对象，必须包含以下字段：
-   * - quantity: 数量（可为null）
-   * - linePrice: 总价（可为null）
-   * - 注意：unitPrice字段会被忽略
-   *
-   * @param userOptions - 可选参数，用于配置计算行为：
-   * - 最终结果保留的小数位数（0-8）
-   * - 运行时计算精度（固定为8）
-   *
-   * @returns 包含完整计算结果的对象：
-   * - quantity: 原样返回输入值
-   * - unitPrice: 计算结果（可能为null）
-   * - linePrice: 原样返回输入值
-   *
-   * @example
-   * ```ts
-   * // 基础用法
-   * CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 }) // { quantity:4, unitPrice:5, linePrice:20 }
-   *
-   * // 浮点数计算
-   * CalcInst.calcUnitPrice({ quantity: 3, linePrice: 9.99 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
-   *
-   * // 自定义精度
-   * CalcInst.setOption('precision', 3)
-   * CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 }) // { quantity:3, unitPrice:3.333, linePrice:10 }
-   *
-   * // 边界处理
-   * CalcInst.calcUnitPrice({ quantity: null, linePrice: 50 }) // { quantity:null, unitPrice:50, linePrice:50 }
-   * CalcInst.calcUnitPrice({ quantity: 0, linePrice: 100 }) // { quantity:0, unitPrice:100, linePrice:100 }
-   * ```
-   *
-   * @performance
-   * 时间复杂度：O(1) 常量时间复杂度（无循环）
-   * 内部采用currency.js进行高精度计算，缓存机制避免重复计算
-   *
-   * @errorHandling
-   * 自动处理以下异常情况：
-   * - quantity和linePrice同时为null：返回全null对象
-   * - quantity为0时：强制unitPrice等于linePrice
-   * - quantity为null时：unitPrice等于linePrice
-   * - 非数字值传入：通过类型校验确保不会出现
-   *
-   * @caching
-   * 缓存键生成策略：
-   * - 基于calcBaseTotalParams和userOptions生成唯一键
-   * - 相同输入保证缓存命中
-   * - 缓存清理：`CalcInst.clearCache('calcUnitPrice')`
-   *
-   * @precision
-   * 精度处理规则：
-   * 1. 先应用方法级precision配置
-   * 2. 无方法级配置时使用全局precision
-   * 3. 运行时计算始终使用8位精度（runtimePrecision）
-   * 4. 结果输出时根据precision配置四舍五入
-   *
-   * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
-   * @see {@link CalcBaseTotalParams} - 参数类型定义
-   *
-   * @testCases
-   * ```ts
-   * // 正常计算
-   * expect(CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 })).toEqual({
-   *   quantity: 4, unitPrice: 5, linePrice: 20
-   * })
-   *
-   * // quantity为null的场景
-   * expect(CalcInst.calcUnitPrice({ quantity: null, linePrice: 50 })).toEqual({
-   *   quantity: null, unitPrice: 50, linePrice: 50
-   * })
-   *
-   * // quantity为0的场景
-   * expect(CalcInst.calcUnitPrice({ quantity: 0, linePrice: 100 })).toEqual({
-   *   quantity: 0, unitPrice: 100, linePrice: 100
-   * })
-   *
-   * // 高精度场景
-   * expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 }, { precision: 3 })).toEqual({
-   *   quantity: 3, unitPrice: 3.334, linePrice: 10.001
-   * })
-   *
-   * // 缓存验证
-   * const cacheSize = CalcInst.getCache().calcUnitPrice.size
-   * CalcInst.calcUnitPrice({ quantity: 5, linePrice: 25 })
-   * expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
-   * ```
-   */
   public calcUnitPrice(
     calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
-    userOptions?: BaseOptions
+    userOptions?: UserOptions
   ): CalcBaseTotalParams {
     const { quantity, linePrice } = calcBaseTotalParams
     let finalUnitPrice: number | null = null
@@ -796,12 +580,15 @@ export class Calculator {
       return { quantity: 0, unitPrice: linePrice, linePrice }
     }
 
-    const mergedOptions = this._getMergedOptions(userOptions)
+    const mergedOptions = this._getUserOptions(userOptions)
     const DecimalClone = Decimal.clone({
-      ...defaultDecimalConfig,
+      ...defaultDecimalConfigs,
       rounding: Decimal.ROUND_HALF_UP,
     })
-    const cacheKey = this.generateCacheKey({ calcBaseTotalParams, mergedOptions })
+    const cacheKey = this.generateCacheKey({
+      calcBaseTotalParams,
+      mergedOptions,
+    })
     if (this.calcCache.calcUnitPrice.has(cacheKey)) {
       return this.calcCache.calcUnitPrice.get(cacheKey) as CalcBaseTotalParams
     }
@@ -810,7 +597,12 @@ export class Calculator {
     const quantityDecimal = new DecimalClone(quantity)
     const linePriceDecimal = new DecimalClone(linePrice)
     const unitPriceDecimal = linePriceDecimal.dividedBy(quantityDecimal)
-    finalUnitPrice = unitPriceDecimal.toDecimalPlaces(mergedOptions.precision).toNumber()
+
+    finalUnitPrice = mergedOptions.keepParamsMaxPrecision
+      ? unitPriceDecimal.toNumber()
+      : unitPriceDecimal
+          .toDecimalPlaces(mergedOptions.outputDecimalPlaces)
+          .toNumber()
 
     const result = {
       quantity,
@@ -821,101 +613,9 @@ export class Calculator {
     return result
   }
 
-  /**
-   * 基础公式: 总价 = 数量 * 单价
-   * @remarks
-   * 支持多种边界场景处理和高精度计算，适用于电商、金融等场景的总价计算需求
-   *
-   * @param calcBaseTotalParams - 计算参数对象，必须包含以下字段：
-   * - quantity: 数量（可为null）
-   * - unitPrice: 单价（可为null）
-   * - 注意：linePrice字段会被忽略
-   *
-   * @param userOptions - 可选参数，用于配置计算行为：
-   * - 最终结果保留的小数位数（0-8）
-   * - 运行时计算精度（固定为8）
-   *
-   * @returns 包含完整计算结果的对象：
-   * - quantity: 原样返回输入值
-   * - unitPrice: 原样返回输入值
-   * - linePrice: 计算结果（可能为null）
-   *
-   * @example
-   * ```ts
-   * // 基础用法
-   * CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 }) // { quantity:4, unitPrice:5, linePrice:20 }
-   *
-   * // 浮点数计算
-   * CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.33 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
-   *
-   * // 自定义精度
-   * CalcInst.setOption('precision', 3)
-   * CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 }) // { quantity:3, unitPrice:3.333, linePrice:9.999 }
-   *
-   * // 边界处理
-   * CalcInst.calcLinePrice({ quantity: null, unitPrice: 50 }) // { quantity:null, unitPrice:50, linePrice:50 }
-   * CalcInst.calcLinePrice({ quantity: 5, unitPrice: null }) // { quantity:5, unitPrice:null, linePrice:null }
-   * ```
-   *
-   * @performance
-   * 时间复杂度：O(1) 常量时间复杂度（无循环）
-   * 内部采用currency.js进行高精度计算，缓存机制避免重复计算
-   *
-   * @errorHandling
-   * 自动处理以下异常情况：
-   * - quantity和unitPrice同时为null：返回全null对象
-   * - quantity为null时：强制linePrice等于unitPrice
-   * - unitPrice为null时：返回null总价
-   * - 非数字值传入：通过类型校验确保不会出现
-   *
-   * @caching
-   * 缓存键生成策略：
-   * - 基于calcBaseTotalParams和userOptions生成唯一键
-   * - 相同输入保证缓存命中
-   * - 缓存清理：`CalcInst.clearCache('calcLinePrice')`
-   *
-   * @precision
-   * 精度处理规则：
-   * 1. 先应用方法级precision配置
-   * 2. 无方法级配置时使用全局precision
-   * 3. 运行时计算始终使用8位精度（runtimePrecision）
-   * 4. 结果输出时根据precision配置四舍五入
-   *
-   * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
-   * @see {@link CalcBaseTotalParams} - 参数类型定义
-   *
-   * @testCases
-   * ```ts
-   * // 正常计算
-   * expect(CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 })).toEqual({
-   *   quantity: 4, unitPrice: 5, linePrice: 20
-   * })
-   *
-   * // quantity为null的场景
-   * expect(CalcInst.calcLinePrice({ quantity: null, unitPrice: 50 })).toEqual({
-   *   quantity: null, unitPrice: 50, linePrice: 50
-   * })
-   *
-   * // unitPrice为null的场景
-   * expect(CalcInst.calcLinePrice({ quantity: 5, unitPrice: null })).toEqual({
-   *   quantity: 5, unitPrice: null, linePrice: null
-   * })
-   *
-   * // 高精度场景
-   * expect(CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.3333 }, { precision: 4 })).toEqual({
-   *   quantity: 3, unitPrice: 3.3333, linePrice: 9.9999
-   * })
-   *
-   * // 缓存验证
-   * const cacheSize = CalcInst.getCache().calcLinePrice.size
-   * CalcInst.calcLinePrice({ quantity: 5, unitPrice: 20 })
-   * expect(CalcInst.getCache().calcLinePrice.size).toBe(cacheSize + 1)
-   * ```
-   */
   // public calcLinePrice(
   //   calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'linePrice'>>,
-  //   userOptions?: BaseOptions
+  //   userOptions?: Partial<UserOptions>
   // ): CalcBaseTotalParams {
   //   const { quantity, unitPrice }: { quantity: number | null; unitPrice: number | null } =
   //     calcBaseTotalParams
@@ -943,24 +643,22 @@ export class Calculator {
   //     }
   //   }
 
-  //   const mergedOptions = this._getMergedOptions(userOptions)
+  //   const mergedOptions = this._getUserOptions(userOptions)
   //   const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
   //   if (this.calcCache.calcLinePrice.has(cacheKey)) {
   //     return this.calcCache.calcLinePrice.get(cacheKey) as CalcBaseTotalParams
   //   }
 
   //   // 通用计算逻辑
-  //   finalLinePrice = $number(unitPrice as number, {
-  //     precision: mergedOptions.runtimePrecision,
-  //   }).multiply(quantity as number).value
+  //   finalLinePrice = $number(unitPrice as number).multiply(quantity as number).value
 
   //   const result = {
   //     quantity,
   //     unitPrice: $number(unitPrice as number, {
-  //       precision: mergedOptions.precision,
+  //       precision: mergedOptions.outputDecimalPlaces,
   //     }).value,
   //     linePrice: $number(finalLinePrice, {
-  //       precision: mergedOptions.precision,
+  //       precision: mergedOptions.outputDecimalPlaces,
   //     }).value,
   //   }
   //   this.calcCache.calcLinePrice.set(cacheKey, result)
@@ -1025,11 +723,10 @@ export class Calculator {
    * 精度处理规则：
    * 1. 先应用方法级decimalPlaces配置
    * 2. 未指定decimalPlaces时使用全局precision配置
-   * 3. 运行时计算始终使用8位精度（runtimePrecision）
-   * 4. 最终小数位数 = decimalPlaces + 2（当未指定decimalPlaces时）
+   * 3. 最终小数位数 = decimalPlaces + 2（当未指定decimalPlaces时）
    *
    * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
+   * @see {@link UserOptions} - 配置项类型定义
    *
    * @testCases
    * ```ts
@@ -1046,7 +743,7 @@ export class Calculator {
    * expect(CalcInst.percentToDecimal(123.4567, -1)).toBe(123.4567) // 无效decimalPlaces处理
    *
    * // 精度继承
-   * CalcInst.setOption('precision', 3)
+   * CalcInst.setUserOption('outputDecimalPlaces', 3)
    * expect(CalcInst.percentToDecimal(50.56789)).toBe(0.50568) // 0.5056789 → 0.50568
    *
    * // 缓存验证
@@ -1072,8 +769,8 @@ export class Calculator {
   //   // 边界情况：传 null 默认不处理
   //   if (originPercentage === null || isNaN(originPercentage)) return null
 
-  //   const mergedOptions = this._getMergedOptions({
-  //     precision: decimalPlaces ?? this.getOptions().precision,
+  //   const mergedOptions = this._getUserOptions({
+  //     precision: decimalPlaces,
   //   })
   //   // 处理小数精度：默认保留两位小数，如 45.66 (%) -> 0.4566
   //   // 最终的小数位数是要比传的多两位的
@@ -1084,7 +781,7 @@ export class Calculator {
   //   }
   //   // 没传 默认precision是2，这里为保证转换一致，要加 2
   //   else {
-  //     handledPrecision = mergedOptions.precision + 2
+  //     handledPrecision = mergedOptions.outputDecimalPlaces + 2
   //   }
 
   //   const result = $number(originPercentage, {
@@ -1159,7 +856,7 @@ export class Calculator {
    * 4. 结果输出时根据precision配置四舍五入
    *
    * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
+   * @see {@link UserOptions} - 配置项类型定义
    *
    * @testCases
    * ```ts
@@ -1180,7 +877,7 @@ export class Calculator {
    * expect(CalcInst.decimalToPercent(-0.5)).toBe(-50)
    *
    * // 精度继承
-   * CalcInst.setOption('precision', 3)
+   * CalcInst.setUserOption('outputDecimalPlaces', 3)
    * expect(CalcInst.decimalToPercent(0.66666666)).toBe(66.6667)
    *
    * // 缓存验证
@@ -1230,7 +927,7 @@ export class Calculator {
   //     return cache.get(cacheKey) as number
   //   }
 
-  //   const mergedOptions = this._getMergedOptions({
+  //   const mergedOptions = this._getUserOptions({
   //     precision: decimalPlaces,
   //   })
   //   // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
@@ -1239,7 +936,7 @@ export class Calculator {
   //     precision: mergedOptions.runtimePrecision,
   //   }).multiply(100).value
   //   this.calcCache.decimalToPercent.set(cacheKey, result)
-  //   return $number(result, { precision: mergedOptions.precision }).value
+  //   return $number(result, { precision: mergedOptions.outputDecimalPlaces }).value
   // }
 
   /**
@@ -1307,7 +1004,7 @@ export class Calculator {
    * 4. 结果输出时根据precision配置四舍五入
    *
    * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
+   * @see {@link UserOptions} - 配置项类型定义
    *
    * @testCases
    * ```ts
@@ -1325,7 +1022,7 @@ export class Calculator {
    * expect(CalcInst.calculateDiscountedPrice(100, -0.2)).toBe(100) // 负折扣率处理
    *
    * // 精度继承
-   * CalcInst.setOption('precision', 3)
+   * CalcInst.setUserOption('outputDecimalPlaces', 3)
    * expect(CalcInst.calculateDiscountedPrice(99.99, 0.3333)).toBe(66.663) // 99.99*(1-0.3333)=66.6633 → 保留3位小数
    *
    * // 缓存验证
@@ -1337,7 +1034,7 @@ export class Calculator {
   // public calculateDiscountedPrice(
   //   originalPrice: number | null,
   //   discountRate: number | null,
-  //   userOptions?: BaseOptions
+  //   userOptions?: UserOptions
   // ): number | null {
   //   const cacheKey = this.generateCacheKey({ originalPrice, discountRate })
 
@@ -1373,7 +1070,7 @@ export class Calculator {
   //     return this.calcCache.calculateDiscountedPrice.get(cacheKey) as number | null
   //   }
 
-  //   const mergedOptions = this._getMergedOptions(userOptions)
+  //   const mergedOptions = this._getUserOptions(userOptions)
   //   const ratePrice = $number(originalPrice, {
   //     precision: mergedOptions.runtimePrecision,
   //   }).multiply(discountRate).value
@@ -1381,7 +1078,7 @@ export class Calculator {
   //     precision: mergedOptions.runtimePrecision,
   //   }).subtract(ratePrice).value
   //   this.calcCache.calculateDiscountedPrice.set(cacheKey, finalPrice)
-  //   return $number(finalPrice, { precision: mergedOptions.precision }).value
+  //   return $number(finalPrice, { precision: mergedOptions.outputDecimalPlaces }).value
   // }
 
   /**
@@ -1449,7 +1146,7 @@ export class Calculator {
    * 4. 结果输出时根据precision配置四舍五入
    *
    * @see {@link CacheStore} - 缓存存储结构定义
-   * @see {@link BaseOptions} - 配置项类型定义
+   * @see {@link UserOptions} - 配置项类型定义
    *
    * @testCases
    * ```ts
@@ -1475,7 +1172,7 @@ export class Calculator {
   //   originPrice: number,
   //   userRate?: number,
   //   userRateType?: RateType,
-  //   userOptions?: BaseOptions
+  //   userOptions?: UserOptions
   // ): number {
   //   let finalRatePrice: number = 0
   //   // 边界处理：originPrice 为 null/0 返回 0
@@ -1488,10 +1185,10 @@ export class Calculator {
   //     return originPrice
   //   }
 
-  //   const curOptions = this._getMergedOptions(userOptions)
+  //   const curOptions = this._getUserOptions(userOptions)
   //   /**
   //    * @remarks
-  //    * 修改逻辑：不处理 userRate 如果未提供则使用全局配置 
+  //    * 修改逻辑：不处理 userRate 如果未提供则使用全局配置
   //    * [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6) 如果无效直接返回 originPrice
   //    */
   //   let curRate: number

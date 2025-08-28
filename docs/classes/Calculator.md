@@ -119,7 +119,7 @@ CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 }) // { quantity:4, unitPrice
 CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.33 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
 
 // 自定义精度
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 }) // { quantity:3, unitPrice:3.333, linePrice:9.999 }
 
 // 边界处理
@@ -306,7 +306,7 @@ expect(CalcInst.calculateDiscountedPrice(-100, 0.2)).toBe(-100) // 负数处理
 expect(CalcInst.calculateDiscountedPrice(100, -0.2)).toBe(100) // 负折扣率处理
 
 // 精度继承
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 expect(CalcInst.calculateDiscountedPrice(99.99, 0.3333)).toBe(66.663) // 99.99*(1-0.3333)=66.6633 → 保留3位小数
 
 // 缓存验证
@@ -365,7 +365,7 @@ CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 }) // { quantity:4, unitPric
 CalcInst.calcUnitPrice({ quantity: 3, linePrice: 9.99 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
 
 // 自定义精度
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 }) // { quantity:3, unitPrice:3.333, linePrice:10 }
 
 // 边界处理
@@ -692,7 +692,7 @@ expect(CalcInst.decimalToPercent('not a number' as any)).toBe(0)
 expect(CalcInst.decimalToPercent(-0.5)).toBe(-50)
 
 // 精度继承
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 expect(CalcInst.decimalToPercent(0.66666666)).toBe(66.6667)
 
 // 缓存验证
@@ -927,7 +927,7 @@ expect(CalcInst.percentToDecimal(null)).toBeNull()
 expect(CalcInst.percentToDecimal(123.4567, -1)).toBe(123.4567) // 无效decimalPlaces处理
 
 // 精度继承
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 expect(CalcInst.percentToDecimal(50.56789)).toBe(0.50568) // 0.5056789 → 0.50568
 
 // 缓存验证
@@ -1077,18 +1077,18 @@ CalcInst.queryCacheStat('sum')
 #### Examples
 
 ```ts
-CalcInst.setOption('precision', 3) // 设置计算精度为3位小数
-CalcInst.setOption('precision', 0) // 禁用小数计算
+CalcInst.setUserOption('outputDecimalPlaces', 3) // 设置计算精度为3位小数
+CalcInst.setUserOption('outputDecimalPlaces', 0) // 禁用小数计算
 ```
 
 ```ts
-CalcInst.setOption('taxRate', 0.15) // 设置15%税率
-CalcInst.setOption('taxRate', 0) // 免税场景
+CalcInst.setUserOption('taxRate', 0.15) // 设置15%税率
+CalcInst.setUserOption('taxRate', 0) // 免税场景
 ```
 
 ```ts
-CalcInst.setOption('rateType', 'gst_free') // 税种无关计算
-CalcInst.setOption('rateType', 'excl_gst') // 含税计算模式
+CalcInst.setUserOption('rateType', 'gst_free') // 税种无关计算
+CalcInst.setUserOption('rateType', 'excl_gst') // 含税计算模式
 ```
 
 #### Throws
@@ -1169,7 +1169,7 @@ CalcInst.subtractMultiple(20, [5, '10', true]) // 15（过滤非法值）
 CalcInst.subtractMultiple(30, [10, null]) // 20
 
 // 精度控制
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 CalcInst.subtractMultiple(10, [3.333]) // 6.667
 CalcInst.subtractMultiple(5, [1.111, 1.111]) // 2.778
 

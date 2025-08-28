@@ -31,7 +31,7 @@ import { CalcInst } from 'utils-calculator'
 CalcInst.sum([1.1, 2.2, 3.3]) // 6.6
 
 // 设置全局精度
-CalcInst.setOption('precision', 3)
+CalcInst.setUserOption('outputDecimalPlaces', 3)
 CalcInst.subtractMultiple(10, [3.333]) // 6.667
 
 // 百分比计算

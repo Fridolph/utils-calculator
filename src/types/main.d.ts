@@ -11,11 +11,16 @@ type CalcBaseTotalParams = {
   linePrice: number | null
 }
 
-type BaseOptions = {
-  precision: number
+type UserOptions = {
+  /**
+   * @remarks
+   * 是否以传参的 小数精度最为最后的计算结果精度，如 0.22225 + 0.22225 = 0.44450
+   * 若不保留，按默认 precision: 2 来呈现最终结果 -> 0.44
+   */
+  keepParamsMaxPrecision: boolean 
+  outputDecimalPlaces: number
   taxRate: number
   rateType: RateType
-  runtimePrecision: 10 // 常量不可修改
 }
 
 type RateType = 'excl_gst' | 'incl_gst' | 'gst_free'

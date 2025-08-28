@@ -3,123 +3,80 @@ import { CalcInst } from '../../main'
 // ----------------- 减法测试模板 -----------------
 describe('subtractMultiple()', () => {
   beforeEach(() => {
-    CalcInst.clearCache()
-    CalcInst.setOption('precision', 2)
-    CalcInst.setOption('taxRate', 0.1)
-    CalcInst.setOption('rateType', 'incl_gst')
+    CalcInst.resetInstance()
   })
 
-  it('测试减法运算', () => {
-    expect(CalcInst.subtractMultiple(9.99, [8.88])).toBe(1.11)
-    expect(CalcInst.subtractMultiple(15, [1, 2, 3, 4])).toBe(5)
-    expect(CalcInst.subtractMultiple(100, [50.5, 20.25])).toBe(29.25)
+  describe('正常减法运算', () => {
+    it('能够按顺序进行减法运算，得到预期结果', () => {
+      expect(CalcInst.subtractMultiple(9.99, [8.88])).toBe(1.11)
+      expect(CalcInst.subtractMultiple(15, [1, 2, 3, 4])).toBe(5)
+      expect(CalcInst.subtractMultiple(100, [50.5, 20.25])).toBe(29.25)
+    })
   })
 
-  it('测试初始值为null的边界情况', () => {
-    expect(CalcInst.subtractMultiple(null as any, [5])).toBe(-5)
-    expect(CalcInst.subtractMultiple('abc' as any, [6])).toBe(-6)
-    expect(CalcInst.subtractMultiple(null as any, [1, 2, 3])).toBe(-6)
+  describe('传参异常及边界处理', () => {
+    it('应处理 null 和 NaN 初始值', () => {
+      expect(CalcInst.subtractMultiple(null as any, [5])).toBe(-5)
+      expect(CalcInst.subtractMultiple('abc' as any, [6])).toBe(-6)
+      expect(CalcInst.subtractMultiple(NaN, [5] as any[])).toBe(-5)
+      expect(CalcInst.subtractMultiple(undefined as any, [NaN, '', NaN] as any[])).toBe(0)
+    })
+
+    it('当被减数组为空时，应返回初始值', () => {
+      expect(CalcInst.subtractMultiple(50, [])).toBe(50)
+      expect(CalcInst.subtractMultiple(100, [])).toBe(100)
+    })
+
+    it('当被减值无效时，应返回初始值', () => {
+      expect(CalcInst.subtractMultiple(10, [null] as any[])).toBe(10)
+      expect(CalcInst.subtractMultiple(20, ['abc'] as any[])).toBe(20)
+    })
+
+    it('当被减数组中包含非数字时，过滤掉非数字再进行运算', () => {
+      expect(CalcInst.subtractMultiple(20, [5, '10', true] as any[])).toBe(15)
+      expect(CalcInst.subtractMultiple(30, [10, null] as any[])).toBe(20)
+    })
+
+    it('should handle zero value correctly', () => {
+      expect(CalcInst.subtractMultiple(0, [5])).toBe(-5)
+      expect(CalcInst.subtractMultiple(5, [0])).toBe(5)
+      expect(CalcInst.subtractMultiple(0, [0])).toBe(0)
+    })
   })
 
-  it('测试传入数值参数非法，应该抛出传入值', () => {
-    // 数值参数非法
-    expect(CalcInst.subtractMultiple(10, [null] as any[])).toBe(10)
-    expect(CalcInst.subtractMultiple(20, ['abc'] as any[])).toBe(20)
-    expect(CalcInst.subtractMultiple(NaN, [5] as any[])).toBe(-5)
-    expect(CalcInst.subtractMultiple(undefined as any, [NaN, '', NaN] as any[])).toBe(0)
+  describe('精度配置验证', () => {
+    it('should return correct value with method-level precision override', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 3)
+      expect(CalcInst.subtractMultiple(10, [3.333])).toBe(6.667)
+      expect(CalcInst.subtractMultiple(10, [3.3333], { precision: 1 })).toBe(6.7)
+      CalcInst.setUserOption('outputDecimalPlaces', 2)
+    })
+
+    it('should return correct value with global precision', () => {
+      expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.888)
+      expect(CalcInst.subtractMultiple(1, 0.1115, { precision: 3 })).toBe(0.889)
+    })
+
+    it('should return correct value with zero and high precision combination', () => {
+      expect(CalcInst.subtractMultiple(0, [0.0005], { precision: 3 })).toBe(-0.001)
+      expect(CalcInst.subtractMultiple(0, 0.1115, { precision: 3 })).toBe(-0.112)
+    })
   })
 
-  it('测试非数字值过滤', () => {
-    expect(CalcInst.subtractMultiple(20, [5, '10', true] as any[])).toBe(15)
-    expect(CalcInst.subtractMultiple(30, [10, null] as any[])).toBe(20)
-  })
+  describe('缓存机制验证', () => {
+    it('should utilize cache mechanism correctly', () => {
+      CalcInst.clearCache('all')
 
-  it('测试精度配置生效', () => {
-    CalcInst.setOption('precision', 3)
-    expect(CalcInst.subtractMultiple(10, [3.333])).toBe(6.667)
-    expect(CalcInst.subtractMultiple(5, [1.111, 1.111])).toBe(2.778)
-    CalcInst.setOption('precision', 2) // 恢复默认值
-  })
+      // 第一次调用生成缓存
+      CalcInst.subtractMultiple(100, [10, 20, 30])
+      // 第二次相同输入应命中缓存
+      CalcInst.subtractMultiple(100, [10, 20, 30])
+      expect(CalcInst.getCache().subtractMultiple.size).toBe(1)
 
-  it('测试空数组作为减数的情况', () => {
-    expect(CalcInst.subtractMultiple(50, [])).toBe(50)
-    expect(CalcInst.subtractMultiple(100, [])).toBe(100)
-  })
-
-  it('测试零值处理', () => {
-    expect(CalcInst.subtractMultiple(0, [5])).toBe(-5)
-    expect(CalcInst.subtractMultiple(5, [0])).toBe(5)
-    expect(CalcInst.subtractMultiple(0, [0])).toBe(0)
-  })
-
-  it('测试自定义精度对计算结果的影响', () => {
-    CalcInst.setOption('precision', 3)
-
-    // 验证3位精度计算
-    expect(CalcInst.subtractMultiple(10, [3.333], { precision: 3 })).toBe(6.667) // 10-3.333=6.667
-
-    // 验证更高位小数的四舍五入处理
-    expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.889) // 3.8885 -> 3.889
-    expect(CalcInst.subtractMultiple(1, 0.1115, { precision: 3 })).toBe(0.889) // 1 - 0.1115 = 0.8885 -> 0.889
-    expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.889) // 5 - 1.1115 = 3.8885 → 保留 3 位后四舍五入为3.889
-
-    // 测试方法级精度覆盖全局配置
-    expect(
-      CalcInst.subtractMultiple(
-        10,
-        [3.3333],
-        { precision: 1 } as BaseOptions // 方法级配置优先级更高
-      )
-    ).toBe(6.7) // 10-3.3333=6.6667 → 保留1位小数后为6.7
-
-    // 测试零值与高精度组合
-    expect(CalcInst.subtractMultiple(0, [0.0005], { precision: 3 })).toBe(-0.001) // 0 - 0.0005 = -0.0005 → 保留 3 位后为 -0.001
-    CalcInst.clearCache('all')
-    expect(CalcInst.subtractMultiple(0, 0.1115, { precision: 3 })).toBe(-0.112) // 0 - 0.1115 = -0.1115 → 保留 3 位后为 -0.112
-
-    // 恢复默认精度
-    CalcInst.setOption('precision', 2)
-  })
-
-  it('测试更改默认精度对计算结果的影响', () => {
-    CalcInst.setOption('precision', 3)
-
-    // 验证3位精度计算
-    expect(CalcInst.subtractMultiple(10, [3.333], { precision: 3 })).toBe(6.667) // 10-3.333=6.667
-
-    // 验证更高位小数的四舍五入处理
-    expect(CalcInst.subtractMultiple(5, [1.1115])).toBe(3.889) // 5-1.1115=3.8885 → 保留2位后四舍五入为3.89
-
-    // 测试方法级精度覆盖全局配置
-    expect(
-      CalcInst.subtractMultiple(
-        10,
-        [3.3333],
-        { precision: 1 } as BaseOptions, // 方法级配置优先级更高
-      )
-    ).toBe(6.7) // 10-3.3333=6.6667 → 保留1位小数后为6.7
-
-    // 测试零值与高精度组合
-    expect(CalcInst.subtractMultiple(0, [0.0005], { precision: 3})).toBe(-0.001) // 0 - 0.0005 = -0.0005 → 保留3位后为-0.001
-
-    // 恢复默认精度
-    CalcInst.setOption('precision', 2)
-  })
-
-  it('should utilize cache mechanism correctly', () => {
-    CalcInst.clearCache('all')
-
-    // 第一次调用生成缓存
-    CalcInst.subtractMultiple(100, [10, 20, 30])
-    // 第二次相同输入应命中缓存
-    CalcInst.subtractMultiple(100, [10, 20, 30])
-    // 验证generateCacheKey调用次数
-    expect(CalcInst.getCache().subtractMultiple.size).toBe(1)
-
-    // 新的计算，生成两条计算记录
-    CalcInst.subtractMultiple(200, [10.1, 20.2, 30.3])
-    // 命名缓存，实际计算2次
-    CalcInst.subtractMultiple(200, [10.1, 20.2, 30.3])
-    expect(CalcInst.getCache().subtractMultiple.size).toBe(2)
+      // 新的计算，生成两条缓存记录
+      CalcInst.subtractMultiple(200, [10.1, 20.2, 30.3])
+      CalcInst.subtractMultiple(200, [10.1, 20.2, 30.3])
+      expect(CalcInst.getCache().subtractMultiple.size).toBe(2)
+    })
   })
 })
