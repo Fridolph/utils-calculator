@@ -105,25 +105,26 @@ describe('sum()', () => {
     })
     
     it('没有指定，最终按默认2位进行四舍五入', () => {
-      expect(CalcInst.sum([1.11555, 2.22255])).toBe(3.34) // 1.11555 + 2.22255 = 3.3381
+      expect(CalcInst.sum([1.11555, 2.22255])).toBe(3.3381) // 1.11555 + 2.22255 = 3.3381
     })
     
     it('应返回具有高精度输入的正确值', () => {
       expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { keepParamsMaxPrecision: false, outputDecimalPlaces: 3 })).toBe(6.667) // 6.6666 -> 6.667
     })
-    // it('应正确处理精度为0时的整数计算', () => {
-    //   CalcInst.setUserOption('outputDecimalPlaces', 0)
-    //   expect(CalcInst.sum([1.111, 2.222])).toBe(3) // 3.333 → 四舍五入为3
-    //   expect(CalcInst.sum([0.499, 0.499])).toBe(1) // 0.998 → 四舍五入为1
-    //   CalcInst.setUserOption('outputDecimalPlaces', 2)
-    // })
+    
+    it('应正确处理精度为0时的整数计算', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 0)
+      expect(CalcInst.sum([1.111, 2.222])).toBe(3) // 3.333 → 四舍五入为3
+      expect(CalcInst.sum([0.499, 0.499])).toBe(1) // 0.998 → 四舍五入为1
+      CalcInst.setUserOption('outputDecimalPlaces', 2)
+    })
 
-    // it('应正确处理精度为8时的极限小数计算', () => {
-    //   CalcInst.setUserOption('outputDecimalPlaces', 8)
-    //   expect(CalcInst.sum([0.00000001, 0.00000001])).toBe(0.00000002)
-    //   expect(CalcInst.sum([0.99999999, 0.00000001])).toBe(1)
-    //   CalcInst.setUserOption('outputDecimalPlaces', 2)
-    // })
+    it('应正确处理精度为8时的极限小数计算', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 8)
+      expect(CalcInst.sum([0.00000001, 0.00000001])).toBe(0.00000002)
+      expect(CalcInst.sum([0.99999999, 0.00000001])).toBe(1)
+      CalcInst.setUserOption('outputDecimalPlaces', 2)
+    })
   })
 
   describe('缓存机制验证', () => {

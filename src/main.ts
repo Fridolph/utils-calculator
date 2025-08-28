@@ -144,28 +144,28 @@ export class Calculator {
    *   .setUserOption('taxRate', 0.1)
    * ```
    */
-  public setUserOption(option: keyof UserOptions, value: unknown): void {
+  public setUserOption<K extends keyof UserOptions>(option: K, value: UserOptions[K]): void {
     switch (option) {
       case 'outputDecimalPlaces':
-        if (isNumber(value) && value >= 0 && value <= 15) {
-          this.userOptions.outputDecimalPlaces = value
-        } else {
+        if (typeof value !== 'number' || value < 0 || value > 15) {
           throw new Error('Precision must be a number between 0 and 15')
         }
+        this.userOptions.outputDecimalPlaces = value
         break
+
       case 'taxRate':
-        if (isNumber(value) && value >= 0 && value <= 1) {
-          this.userOptions.taxRate = value
-        } else {
+        if (typeof value !== 'number' || value < 0 || value > 1) {
           throw new Error('Tax rate must be a number between 0 and 1')
         }
+        this.userOptions.taxRate = value
         break
+        
       case 'rateType':
-        if (['gst_free', 'incl_gst', 'excl_gst'].includes(value as string)) {
-          this.userOptions.rateType = value as RateType
-        } else {
+        const validRateTypes: readonly RateType[] = ['gst_free', 'incl_gst', 'excl_gst']
+        if (!validRateTypes.includes(value as RateType)) {
           throw new Error('Invalid RateType')
         }
+        this.userOptions.rateType = value as RateType
         break
       default:
         throw new Error(`Invalid option: ${option}`)
@@ -445,10 +445,12 @@ export class Calculator {
     data: number | number[] | { [key: string]: number },
     userOptions?: Partial<UserOptions>
   ): number {
-    let mergedOptions = this._getUserOptions()
-    if (isObject(userOptions)) {
+    let mergedOptions = { ...this._getUserOptions() }
+    if (mergedOptions !== null && isObject(userOptions) && Object.keys(userOptions).length > 0) {
       Object.entries(userOptions).forEach(([key, val]) => {
-        mergedOptions[key] = val
+        if (key in this.userOptions) {
+          mergedOptions[key as keyof UserOptions] = val as any
+        }
       })
     }
     const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
@@ -487,8 +489,8 @@ export class Calculator {
         this.getThisDataMaxPrecision(data),
         mergedOptions.outputDecimalPlaces,
       )
-      // console.log('finalDigitNumber', finalDigitNumber)
-      // 新增逻辑：根据 keepParamsMaxPrecision 决定是否保留完整精度
+      
+      // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
       total = finalDigitNumber === -1
         ? totalDecimal.toNumber()
         : totalDecimal.toDecimalPlaces(finalDigitNumber).toNumber()
