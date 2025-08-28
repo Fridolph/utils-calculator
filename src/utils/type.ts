@@ -9,3 +9,5 @@ export const isNumber = (value: unknown): value is number => {
 export const isObject = (value: unknown): value is object => {
   return !!value && value.constructor === Object
 }
+
+export const isNaN = Number.isNaN

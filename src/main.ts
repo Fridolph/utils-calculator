@@ -3,7 +3,8 @@
  * @description 基于 $number 计算的，把经常用到一些计算方法封装为一个工具类，也算是减少模版代码 W_W
  * @description 注意：为避免国际化带来的千分位及小数等问题，使用前请将传参都处理为通用的 Number 类型。类方法的输出都是基础数字类型
  * 处理边界情况：
- * 1. 不直接报错，允许用户传入 0 和 null
+ * 0. 命中边界直接返对应预设值，且不命中缓存
+ * 1. 不直接报错，允许用户传入 0 和 null，及返回 null （产品希望某些情况，将错误值清空）
  * 2. 错误逻辑，如分母为0的情况，将输出处理为 null
  * 3. 计算结果为 0 时，输出为 0
  * @example 简单求和   CalcInst.sum([23.34, 34.67, 99.99]) -> 157.99
@@ -11,7 +12,7 @@
  * @example 百分比转小数 CalcInst.decimalToPercent(0.50549993) -> 50.56
  */
 import Decimal from 'decimal.js'
-import { isNumber, isObject } from './utils/type'
+import { isNumber, isObject, isNaN } from './utils/type'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -74,7 +75,7 @@ export class Calculator {
     this.calcCache = {
       sum: new Map(),
       subtractMultiple: new Map(),
-      // calcUnitPrice: new Map(),
+      calcUnitPrice: new Map(),
       // calcLinePrice: new Map(),
       // percentToDecimal: new Map(),
       // decimalToPercent: new Map(),
@@ -269,9 +270,9 @@ export class Calculator {
     if (cacheType === 'all' || cacheType === 'subtractMultiple') {
       this.calcCache.subtractMultiple.clear()
     }
-    // if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
-    //   this.calcCache.calcUnitPrice.clear()
-    // }
+    if (cacheType === 'all' || cacheType === 'calcUnitPrice') {
+      this.calcCache.calcUnitPrice.clear()
+    }
     // if (cacheType === 'all' || cacheType === 'calcLinePrice') {
     //   this.calcCache.calcLinePrice.clear()
     // }
@@ -513,13 +514,13 @@ export class Calculator {
     let numbersToSum: number[] = []
 
     if (Array.isArray(data)) {
-      numbersToSum = data.filter((num) => isNumber(num) && !Number.isNaN(num))
+      numbersToSum = data.filter((num) => isNumber(num) && !isNaN(num))
     }
     else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
-        (value: unknown): value is number => isNumber(value) && !Number.isNaN(value)
+        (value: unknown): value is number => isNumber(value) && !isNaN(value)
       )
     }
 
@@ -646,7 +647,7 @@ export class Calculator {
     })
 
     // 边界处理：初始值非法时转为0
-    if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
+    if (!isNumber(initialValue) || isNaN(initialValue)) {
       initialValue = 0
     }
 
@@ -768,60 +769,57 @@ export class Calculator {
    * expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
    * ```
    */
-  // public calcUnitPrice(
-  //   calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
-  //   userOptions?: BaseOptions
-  // ): CalcBaseTotalParams {
-  //   const { quantity, linePrice }: any = calcBaseTotalParams
-  //   let finalUnitPrice: number = 0
+  public calcUnitPrice(
+    calcBaseTotalParams: Required<Omit<CalcBaseTotalParams, 'unitPrice'>>,
+    userOptions?: BaseOptions
+  ): CalcBaseTotalParams {
+    const { quantity, linePrice } = calcBaseTotalParams
+    let finalUnitPrice: number | null = null
 
-  //   // 边界1 如果总价和数量都为null，直接返回初始值
-  //   if (quantity === null && linePrice === null) {
-  //     return { quantity: null, unitPrice: null, linePrice: null }
-  //   }
+    // 边界1: quantity和linePrice同时为null，返回全null对象
+    if (quantity === null && linePrice === null) {
+      return { quantity: null, unitPrice: null, linePrice: null }
+    }
 
-  //   // 边界2 若确实没有数量，但传有总价，产品希望单价总价一致
-  //   if (quantity === null) {
-  //     return { quantity, unitPrice: linePrice, linePrice }
-  //   }
+    // 边界2: quantity为null时，unitPrice等于linePrice
+    if (quantity === null) {
+      return { quantity, unitPrice: linePrice, linePrice }
+    }
 
-  //   // 边界3 总价未传入的情况
-  //   if (isNumber(quantity) && linePrice === null) {
-  //     return { quantity, unitPrice: null, linePrice: null }
-  //   }
+    // 边界3: linePrice为null时，返回null总价
+    if (linePrice === null) {
+      return { quantity, unitPrice: null, linePrice: null }
+    }
 
-  //   // 边界4 处理分母为0的情况
-  //   if (quantity === 0 && isNumber(linePrice) && linePrice >= 0) {
-  //     return { quantity: 0, unitPrice: linePrice, linePrice }
-  //   }
+    // 边界4: quantity为0时，强制unitPrice等于linePrice
+    if (quantity === 0) {
+      return { quantity: 0, unitPrice: linePrice, linePrice }
+    }
 
-  //   const mergedOptions = this._getMergedOptions(userOptions)
-  //   const cacheKey = this.generateCacheKey({ calcBaseTotalParams, userOptions })
-  //   if (this.calcCache.calcUnitPrice.has(cacheKey)) {
-  //     return this.calcCache.calcUnitPrice.get(cacheKey) as {
-  //       quantity: number | null
-  //       unitPrice: number | null
-  //       linePrice: number | null
-  //     }
-  //   }
+    const mergedOptions = this._getMergedOptions(userOptions)
+    const DecimalClone = Decimal.clone({
+      ...defaultDecimalConfig,
+      rounding: Decimal.ROUND_HALF_UP,
+    })
+    const cacheKey = this.generateCacheKey({ calcBaseTotalParams, mergedOptions })
+    if (this.calcCache.calcUnitPrice.has(cacheKey)) {
+      return this.calcCache.calcUnitPrice.get(cacheKey) as CalcBaseTotalParams
+    }
 
-  //   // 通用计算逻辑 单价 = 总价 / 数量
-  //   finalUnitPrice = $number(linePrice || 0, {
-  //     precision: mergedOptions.runtimePrecision,
-  //   }).divide(quantity).value as number
+    // 使用 Decimal.js 高精度计算
+    const quantityDecimal = new DecimalClone(quantity)
+    const linePriceDecimal = new DecimalClone(linePrice)
+    const unitPriceDecimal = linePriceDecimal.dividedBy(quantityDecimal)
+    finalUnitPrice = unitPriceDecimal.toDecimalPlaces(mergedOptions.precision).toNumber()
 
-  //   const result = {
-  //     quantity,
-  //     unitPrice: $number(finalUnitPrice as number, {
-  //       precision: mergedOptions.precision,
-  //     }).value,
-  //     linePrice: $number(linePrice as number, {
-  //       precision: mergedOptions.precision,
-  //     }).value,
-  //   }
-  //   this.calcCache.calcUnitPrice.set(cacheKey, result)
-  //   return result
-  // }
+    const result = {
+      quantity,
+      unitPrice: finalUnitPrice,
+      linePrice,
+    }
+    this.calcCache.calcUnitPrice.set(cacheKey, result)
+    return result
+  }
 
   /**
    * 基础公式: 总价 = 数量 * 单价
@@ -1072,7 +1070,7 @@ export class Calculator {
   //     return this.calcCache.percentToDecimal.get(cacheKey) as number | null
   //   }
   //   // 边界情况：传 null 默认不处理
-  //   if (originPercentage === null || Number.isNaN(originPercentage)) return null
+  //   if (originPercentage === null || isNaN(originPercentage)) return null
 
   //   const mergedOptions = this._getMergedOptions({
   //     precision: decimalPlaces ?? this.getOptions().precision,
@@ -1200,10 +1198,10 @@ export class Calculator {
   //     originDecimal === null ||
   //     originDecimal === 0 ||
   //     decimalPlaces === null ||
-  //     Number.isNaN(originDecimal)
+  //     isNaN(originDecimal)
   //   )
   //     return 0
-  //   if (!isNumber(decimalPlaces) || Number.isNaN(decimalPlaces)) {
+  //   if (!isNumber(decimalPlaces) || isNaN(decimalPlaces)) {
   //     console.error(
   //       '参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字'
   //     )
@@ -1219,7 +1217,7 @@ export class Calculator {
   //       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理'
   //     )
   //     decimalPlaces = 8
-  //   } else if (Number.isNaN(decimalPlaces)) {
+  //   } else if (isNaN(decimalPlaces)) {
   //     console.error(
   //       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理'
   //     )
@@ -1347,8 +1345,8 @@ export class Calculator {
   //   if (
   //     originalPrice === null ||
   //     discountRate === null ||
-  //     Number.isNaN(originalPrice) ||
-  //     Number.isNaN(discountRate)
+  //     isNaN(originalPrice) ||
+  //     isNaN(discountRate)
   //   ) {
   //     return null
   //   }
@@ -1481,7 +1479,7 @@ export class Calculator {
   // ): number {
   //   let finalRatePrice: number = 0
   //   // 边界处理：originPrice 为 null/0 返回 0
-  //   if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
+  //   if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || isNaN(originPrice)) {
   //     return 0
   //   }
   //   // 不处理 originPrice 为负的情况，价格应该为正
@@ -1499,7 +1497,7 @@ export class Calculator {
   //   let curRate: number
   //   if (userRate === undefined) {
   //     curRate = curOptions.taxRate
-  //   } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
+  //   } else if (userRate === null || isNaN(userRate) || typeof userRate !== 'number') {
   //     // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
   //     console.warn('userRate 无效，直接返回原始价格')
   //     return originPrice
