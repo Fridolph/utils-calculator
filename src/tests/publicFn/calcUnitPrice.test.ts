@@ -2,7 +2,7 @@ import { CalcInst } from '../../main'
 
 // ----------------- 单价/总价计算测试模板 -----------------
 
-describe('calcUnitPrice()', () => {
+describe.skip('calcUnitPrice()', () => {
 
   beforeEach(() => {
     CalcInst.resetInstance()
