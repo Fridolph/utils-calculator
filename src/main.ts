@@ -12,7 +12,7 @@
  * @example 百分比转小数 CalcInst.decimalToPercent(0.50549993) -> 50.56
  */
 import Decimal from 'decimal.js'
-import { isNumber, isObject, isNaN } from './utils/type'
+import { isNumber, isObject } from './utils/type'
 import { getDecimalPlaces } from './utils/string'
 
 /**
@@ -84,9 +84,9 @@ export class Calculator {
       calcUnitPrice: new Map(),
       calcLinePrice: new Map(),
       percentToDecimal: new Map(),
-      // decimalToPercent: new Map(),
+      decimalToPercent: new Map(),
       calculateDiscountedPrice: new Map(),
-      // computeRate: new Map(),
+      computeRate: new Map(),
     }
     this.userOptions = defaultUserOptions
     this.calcConfigs = defaultDecimalConfigs
@@ -163,13 +163,14 @@ export class Calculator {
         this.userOptions.taxRate = value
         break
 
-      case 'rateType':
+      case 'rateType': {
         const validRateTypes: readonly RateType[] = ['gst_free', 'incl_gst', 'excl_gst']
         if (!validRateTypes.includes(value as RateType)) {
           throw new Error('Invalid RateType')
         }
         this.userOptions.rateType = value as RateType
         break
+      }
       default:
         throw new Error(`Invalid option: ${option}`)
     }
@@ -309,18 +310,18 @@ export class Calculator {
     if (cacheType === 'all' || cacheType === 'percentToDecimal') {
       this.calcCache.percentToDecimal.clear()
     }
-    // if (cacheType === 'all' || cacheType === 'decimalToPercent') {
-    //   this.calcCache.decimalToPercent.clear()
-    // }
+    if (cacheType === 'all' || cacheType === 'decimalToPercent') {
+      this.calcCache.decimalToPercent.clear()
+    }
     if (cacheType === 'all' || cacheType === 'calculateDiscountedPrice') {
       this.calcCache.calculateDiscountedPrice.clear()
     }
-    // if (cacheType === 'all' || cacheType === 'computeRate') {
-    //   this.calcCache.computeRate.clear()
-    // }
-    // if (!cacheFnList.includes(cacheType)) {
-    //   console.warn(`Invalid cacheType: ${cacheType}`)
-    // }
+    if (cacheType === 'all' || cacheType === 'computeRate') {
+      this.calcCache.computeRate.clear()
+    }
+    if (!cacheFnList.includes(cacheType)) {
+      console.warn(`Invalid cacheType: ${cacheType}`)
+    }
   }
 
   /**
@@ -439,7 +440,7 @@ export class Calculator {
     data: number | number[] | { [key: string]: number },
     userOptions?: Partial<UserOptions>
   ): number {
-    let mergedOptions = { ...this._getUserOptions() }
+    const mergedOptions = { ...this._getUserOptions() }
     if (
       mergedOptions !== null &&
       isObject(userOptions) &&
@@ -462,12 +463,12 @@ export class Calculator {
     let numbersToSum: number[] = []
 
     if (Array.isArray(data)) {
-      numbersToSum = data.filter((num) => isNumber(num) && !isNaN(num))
+      numbersToSum = data.filter((num) => isNumber(num) && !Number.isNaN(num))
     } else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
-        (value: unknown): value is number => isNumber(value) && !isNaN(value)
+        (value: unknown): value is number => isNumber(value) && !Number.isNaN(value)
       )
     } else if (isNumber(data)) {
       numbersToSum = [data]
@@ -501,7 +502,7 @@ export class Calculator {
     subtractValues: number[] | number,
     userOptions?: Partial<UserOptions>
   ): number {
-    let mergedOptions = { ...this._getUserOptions() }
+    const mergedOptions = { ...this._getUserOptions() }
     if (
       mergedOptions !== null &&
       isObject(userOptions) &&
@@ -523,7 +524,7 @@ export class Calculator {
     })
 
     // 边界处理：初始值非法时转为0
-    if (!isNumber(initialValue) || isNaN(initialValue)) {
+    if (!isNumber(initialValue) || Number.isNaN(initialValue)) {
       initialValue = 0
     }
 
@@ -584,7 +585,7 @@ export class Calculator {
       return { quantity: 0, unitPrice: linePrice, linePrice }
     }
 
-    let mergedOptions = { ...this._getUserOptions() }
+    const mergedOptions = { ...this._getUserOptions() }
     if (
       mergedOptions !== null &&
       isObject(userOptions) &&
@@ -638,8 +639,8 @@ export class Calculator {
       calcBaseTotalParams
     let finalLinePrice: number = 0
     // 明确边界处理逻辑，这里统一返回null
-    if (!isNumber(quantity) || isNaN(quantity)) quantity = null
-    if (!isNumber(unitPrice) || isNaN(unitPrice)) unitPrice = null
+    if (!isNumber(quantity) || Number.isNaN(quantity)) quantity = null
+    if (!isNumber(unitPrice) || Number.isNaN(unitPrice)) unitPrice = null
     if (quantity === null && isNumber(unitPrice) && unitPrice >= 0) {
       return {
         quantity,
@@ -657,7 +658,7 @@ export class Calculator {
     if (quantity === null && unitPrice === null)
       return { quantity, unitPrice: null, linePrice: null }
 
-    let mergedOptions = { ...this._getUserOptions() }
+    const mergedOptions = { ...this._getUserOptions() }
     if (
       mergedOptions !== null &&
       isObject(userOptions) &&
@@ -711,9 +712,9 @@ export class Calculator {
       originalPrice === null ||
       discountRate === null ||
       !isNumber(originalPrice) ||
-      isNaN(originalPrice) ||
+      Number.isNaN(originalPrice) ||
       !isNumber(discountRate) ||
-      isNaN(discountRate)
+      Number.isNaN(discountRate)
     )
       return null
 
@@ -738,7 +739,7 @@ export class Calculator {
       return originalPrice
     }
 
-    let mergedOptions = { ...this._getUserOptions() }
+    const mergedOptions = { ...this._getUserOptions() }
     if (
       mergedOptions !== null &&
       isObject(userOptions) &&
@@ -781,34 +782,41 @@ export class Calculator {
 
   public percentToDecimal(
     originPercentage: number | null,
-    userOptions?: Partial<UserOptions>
+    userOptions?: number | Partial<UserOptions>
   ): number | null {
+    const curUserOptions = { ...this._getUserOptions() }
+    if (userOptions === undefined) {
+      userOptions = curUserOptions
+    }
+    else if (!isObject(userOptions) && !isNumber(userOptions)) {
+      // console.error('非法参数 userOptions', '请传入正确的参数，第二个参数应该为 0 - 10位 Number 类型, 非法参数按预设处理')
+      userOptions = curUserOptions
+    }
+    else if (isNumber(userOptions)) {
+      const tempNum = Number.isNaN(userOptions) ? userOptions : -1
+      userOptions = { outputDecimalPlaces: tempNum }
+    }
+    // console.log('curUserOptions', curUserOptions)
+    
+    if (isObject(userOptions)) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        curUserOptions[key] = val
+      })
+    }
+
     // 边界情况：传 null 默认不处理
     if (
       originPercentage === null ||
       !isNumber(originPercentage) ||
-      isNaN(originPercentage)
+      Number.isNaN(originPercentage)
     ) {
       return null
-    }
-
-    let mergedOptions = { ...this._getUserOptions() }
-    if (
-      mergedOptions !== null &&
-      isObject(userOptions) &&
-      Object.keys(userOptions).length > 0
-    ) {
-      Object.entries(userOptions).forEach(([key, val]) => {
-        if (key in this.userOptions) {
-          mergedOptions[key as keyof UserOptions] = val as any
-        }
-      })
     }
 
     const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
     const cacheKey = this.generateCacheKey({
       originPercentage,
-      mergedOptions,
+      curUserOptions,
     })
 
     if (this.calcCache.percentToDecimal?.has(cacheKey)) {
@@ -820,7 +828,8 @@ export class Calculator {
     const hundredDecimal = new DecimalClone(100)
     const resultDecimal = percentageDecimal.dividedBy(hundredDecimal)
     const finalDigitNumber =
-      mergedOptions.outputDecimalPlaces === -1 ? -1 : mergedOptions.outputDecimalPlaces
+      curUserOptions.outputDecimalPlaces === -1 ? -1 : curUserOptions.outputDecimalPlaces
+    // console.log('curUserOptions.outputDecimalPlaces', curUserOptions.outputDecimalPlaces)
     // console.log('finalDigitNumber', finalDigitNumber)
 
     const result =
@@ -833,60 +842,76 @@ export class Calculator {
     this.calcCache.percentToDecimal.set(cacheKey, result)
     return result
   }
+
+  public decimalToPercent(
+    originNumber: number | null,
+    userOptions?: number | Partial<UserOptions>
+    // decimalPlaces: number = 2
+  ): number {
+    // 处理参数
+    const curUserOptions = { ...this._getUserOptions() }
+    if (userOptions === undefined) {
+      userOptions = curUserOptions
+    }
+    else if (!isObject(userOptions) && !isNumber(userOptions)) {
+      console.error('非法参数 userOptions, 请传入正确的参数，第二个参数应该为 0 - 10位 Number 类型, 非法参数按预设处理')
+      userOptions = curUserOptions
+    }
+    else if (isNumber(userOptions)) {
+      const tempNum = userOptions > -1 ? userOptions : -1
+      userOptions = { outputDecimalPlaces: tempNum }
+    }
+    
+    if (isObject(userOptions)) {
+      Object.entries(userOptions).forEach(([key, val]) => {
+        curUserOptions[key] = val
+      })
+    }
+    // console.log('userOptions', userOptions)
+    // console.log('curUserOptions', curUserOptions)
+
+    if (
+      originNumber === null || originNumber === 0 ||
+      !isNumber(originNumber) || Number.isNaN(originNumber)
+    ) return 0
+
+
+    if (!isNumber(userOptions?.outputDecimalPlaces) || Number.isNaN(userOptions?.outputDecimalPlaces)) {
+      console.error('参数错误，请检查传参: \n1. originNumber 应该为 Number 类型；\n2. 第二个参数保留小数位数 应为 0 到 10 之间的数字')
+      return originNumber
+    }
+
+    if (userOptions.outputDecimalPlaces > 10) {
+      console.error(
+        '参数错误，请检查传参: 第二个参数保留小数位数应为 0 到 10 之间的数字, 当前大于 10 当作 10 来处理'
+      )
+      userOptions.outputDecimalPlaces = 10
+    }
+
+    // 缓存命中直接返回结果
+    const cacheKey = this.generateCacheKey({ originNumber, userOptions })
+    const cache = this.getCache('decimalToPercent')
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey) as number
+    }
+
+    const finalDigitNumber =
+      userOptions.outputDecimalPlaces === -1 ? -1 : userOptions.outputDecimalPlaces
+
+    const resultTemp = new Decimal(originNumber).mul(100)
+
+    // console.log('走到这里了 >> resultTemp', finalDigitNumber, resultTemp)
+
+    // 精度处理逻辑
+    const finalResult = finalDigitNumber === -1
+      ? resultTemp.toNumber()
+      : resultTemp.toDecimalPlaces(userOptions.outputDecimalPlaces).toNumber()
+
+    // 存储到缓存
+    this.calcCache.decimalToPercent.set(cacheKey, finalResult)
+    return finalResult
+  }
 }
-
-// public decimalToPercent(
-//   originDecimal: number | null,
-//   decimalPlaces: number = 2
-// ): number {
-//   // 优先处理边界，不使用缓存
-//   if (
-//     originDecimal === null ||
-//     originDecimal === 0 ||
-//     decimalPlaces === null ||
-//     isNaN(originDecimal)
-//   )
-//     return 0
-//   if (!isNumber(decimalPlaces) || isNaN(decimalPlaces)) {
-//     console.error(
-//       '参数错误，请检查传参: originDecimal 应该为 Number 类型； 2. decimalPlaces 应为 0 到 8 之间的数字'
-//     )
-//     return 0
-//   }
-//   if (decimalPlaces < 0) {
-//     console.error(
-//       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前小于0 当作0来处理'
-//     )
-//     decimalPlaces = 0
-//   } else if (decimalPlaces > 8) {
-//     console.error(
-//       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前大于8 当作8来处理'
-//     )
-//     decimalPlaces = 8
-//   } else if (isNaN(decimalPlaces)) {
-//     console.error(
-//       '参数错误，请检查传参: decimalPlaces 应为 0 到 8 之间的数字, 当前为NaN 当作默认 2 来处理'
-//     )
-//     decimalPlaces = 2
-//   }
-
-//   const cacheKey = this.generateCacheKey({ originDecimal, decimalPlaces })
-//   const cache = this.getCache('percentToDecimal')
-//   if (cache.has(cacheKey)) {
-//     return cache.get(cacheKey) as number
-//   }
-
-//   const mergedOptions = this._getUserOptions({
-//     precision: decimalPlaces,
-//   })
-//   // 先检查缓存，命中则返回缓存值，未命中再生成 key 并计算
-//   // 如果decimalPlaces为null，直接使用runtimePrecision作为精度
-//   const result = $number(originDecimal as number, {
-//     precision: mergedOptions.runtimePrecision,
-//   }).multiply(100).value
-//   this.calcCache.decimalToPercent.set(cacheKey, result)
-//   return $number(result, { precision: mergedOptions.outputDecimalPlaces }).value
-// }
 
 // public computeRate(
 //   originPrice: number,
@@ -896,7 +921,7 @@ export class Calculator {
 // ): number {
 //   let finalRatePrice: number = 0
 //   // 边界处理：originPrice 为 null/0 返回 0
-//   if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || isNaN(originPrice)) {
+//   if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
 //     return 0
 //   }
 //   // 不处理 originPrice 为负的情况，价格应该为正
@@ -914,7 +939,7 @@ export class Calculator {
 //   let curRate: number
 //   if (userRate === undefined) {
 //     curRate = curOptions.taxRate
-//   } else if (userRate === null || isNaN(userRate) || typeof userRate !== 'number') {
+//   } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
 //     // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
 //     console.warn('userRate 无效，直接返回原始价格')
 //     return originPrice

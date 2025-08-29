@@ -6,8 +6,10 @@ export const isNumber = (value: unknown): value is number => {
   }
 }
 
+export const isString = (value: unknown): value is string => {
+  return typeof value === 'string'
+}
+
 export const isObject = (value: unknown): value is object => {
   return !!value && value.constructor === Object
 }
-
-export const isNaN = Number.isNaN
