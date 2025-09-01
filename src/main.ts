@@ -2,14 +2,12 @@
  * @author: Fridolph
  * @description 基于 $number 计算的，把经常用到一些计算方法封装为一个工具类，也算是减少模版代码 W_W
  * @description 注意：为避免国际化带来的千分位及小数等问题，使用前请将传参都处理为通用的 Number 类型。类方法的输出都是基础数字类型
- * 处理边界情况：
- * 0. 命中边界直接返对应预设值，且不命中缓存
- * 1. 不直接报错，允许用户传入 0 和 null，及返回 null （产品希望某些情况，将错误值清空）
- * 2. 错误逻辑，如分母为0的情况，将输出处理为 null
- * 3. 计算结果为 0 时，输出为 0
- * @example 简单求和   CalcInst.sum([23.34, 34.67, 99.99]) -> 157.99
- * @example 小数转百分比 CalcInst.decimalToPercent(0.50549993) -> 50.56
- * @example 百分比转小数 CalcInst.decimalToPercent(0.50549993) -> 50.56
+ * @description 约定
+ * 1. 使用本类时，请务必在调用方法时传入参数，并确保参数类型正确，否则可能会导致计算错误或异常
+ * 2. 为避免认知错误，计算方法只返原始计算结果的 Number 类型，若需 四舍五入 等处理，参考 API 设位，或用本仓库的一个 Format 转换
+ * 3. 不直接报错，允许用户传入 0 和 null，及返回 null （产品希望某些情况，将错误值清空）
+ * 4. 错误逻辑，如分母为 0 的情况，将输出处理为 null
+ * 5. 一些大边界 Infinity 等不做特殊处理
  */
 import Decimal from 'decimal.js'
 import { isNumber, isObject, isString } from './utils/type'
@@ -26,8 +24,9 @@ const defaultUserOptions: UserOptions = {
   // 根据业务需求自行调整, -1 为保留原始计算值
   outputDecimalPlaces: -1,
   taxRate: 0.1, // 折扣率 - 理解为 打九折
-  rateType: 'incl_gst', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 incl_gst
+  rateType: 'INCL', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 INCL
 }
+Object.seal(defaultUserOptions)
 
 const defaultDecimalConfigs: Decimal.Config = {
   precision: 16, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
@@ -39,6 +38,7 @@ const defaultDecimalConfigs: Decimal.Config = {
   modulo: 1,
   crypto: false,
 }
+Object.seal(defaultDecimalConfigs)
 
 const cacheFnList = [
   'all',
@@ -52,23 +52,6 @@ const cacheFnList = [
   'computeRate',
 ]
 
-/**
- * 核心计算类
- * @remarks
- * 提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景
- *
- * @example
- * ```ts
- * const calc = Calculator.getInstance()
- * calc.sum([1, 2, 3]) // 6
- * calc.decimalToPercent(0.66666666, 4) // 66.6667
- * ```
- * 当然也可以直接使用单例模式
- * ```ts
- * CalcInst.sum([1,2,3,4]) // 10
- * CalcInst.percentToDecimal(55.66, 4) // 0.5566
- * ```
- */
 export class Calculator {
   // 性能考量：使用单例模式
   private static instance: Calculator
@@ -88,94 +71,51 @@ export class Calculator {
       calculateDiscountedPrice: new Map(),
       computeRate: new Map(),
     }
-    this.userOptions = defaultUserOptions
-    this.calcConfigs = defaultDecimalConfigs
+    this.userOptions = { ...defaultUserOptions }
+    this.calcConfigs = { ...defaultDecimalConfigs }
   }
 
   public resetInstance() {
     this.clearCache()
-    this.userOptions = defaultUserOptions
-    this.calcConfigs = defaultDecimalConfigs
+    this.userOptions = { ...defaultUserOptions }
+    this.calcConfigs = { ...defaultDecimalConfigs }
   }
 
-  /**
-   * 动态设置计算器核心配置项
-   * @description 用于调整运行时计算参数，支持链式调用
-   *
-   * @example 设置精度
-   * ```ts
-   * CalcInst.setUserOption('outputDecimalPlaces', 3) // 设置计算精度为3位小数
-   * CalcInst.setUserOption('outputDecimalPlaces', 0) // 禁用小数计算
-   * ```
-   *
-   * @example 设置税率
-   * ```ts
-   * CalcInst.setUserOption('taxRate', 0.15) // 设置15%税率
-   * CalcInst.setUserOption('taxRate', 0) // 免税场景
-   * ```
-   *
-   * @example 设置计税模式
-   * ```ts
-   * CalcInst.setUserOption('rateType', 'gst_free') // 税种无关计算
-   * CalcInst.setUserOption('rateType', 'excl_gst') // 含税计算模式
-   * ```
-   *
-   * @param option - 配置项名称，可选值：
-   * - 'precision'：调整计算精度（0-15位小数）
-   * - 'taxRate'：设置税率（0-1之间的小数）
-   * - 'rateType'：指定税率类型（'gst_free'|'incl_gst'|'excl_gst'）
-   *
-   * @param value - 配置项值，根据option类型不同：
-   * - precision: 必须是 0~8 的数字
-   * - taxRate: 必须是 0~1 的数字
-   * - rateType: 必须是有效税率类型
-   *
-   * @throws {Error} 当传入无效配置项时抛出错误
-   * - 无效配置项名：`Invalid option: ${option}`
-   * - 精度超出范围：`Precision must be a number between 0 and 8`
-   * - 税率超出范围：`Tax rate must be a number between 0 and 1`
-   * - 无效税率类型：`Invalid RateType`
-   *
-   * @remarks
-   * 该方法支持链式调用，典型用法：
-   * ```ts
-   * CalcInst
-   *   .setUserOption('outputDecimalPlaces', 3)
-   *   .setUserOption('taxRate', 0.1)
-   * ```
-   */
   public setUserOption<K extends keyof UserOptions>(
     option: K,
     value: UserOptions[K]
   ): void {
     switch (option) {
       case 'keepParamsMaxPrecision':
+        if (typeof value !== 'boolean') {
+          throw new Error('参数 keepParamsMaxPrecision 应该为 Boolean 值')
+        }
         this.userOptions.keepParamsMaxPrecision = value as boolean
         break
       case 'outputDecimalPlaces':
-        if (typeof value !== 'number' || value < 0 || value > 16) {
-          throw new Error('Precision must be a number between 0 and 16')
+        if (typeof value !== 'number' || value > 16 || (value < 0 && value !== -1)) {
+          throw new Error('参数 outputDecimalPlaces 应该为 [0, 16] 间的数字，或者 -1 表示不进行四舍五入直接返回原始值')
         }
         this.userOptions.outputDecimalPlaces = value
         break
 
       case 'taxRate':
         if (typeof value !== 'number' || value < 0 || value > 1) {
-          throw new Error('Tax rate must be a number between 0 and 1')
+          throw new Error('参数 taxRate 应该为 [0, 1] 间的数字')
         }
         this.userOptions.taxRate = value
         break
 
       case 'rateType': {
-        const validRateTypes: readonly RateType[] = ['gst_free', 'incl_gst', 'excl_gst']
+        const validRateTypes: readonly RateType[] = ['EXCL', 'INCL', 'FREE']
         if (!validRateTypes.includes(value as RateType)) {
-          throw new Error('Invalid RateType')
+          throw new Error(`请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`)
         }
         this.userOptions.rateType = value as RateType
         break
       }
       default:
-        throw new Error(`Invalid option: ${option}`)
+        throw new Error(`配置项错误 ${option} , 请检查后重试`)
     }
   }
 
@@ -218,32 +158,6 @@ export class Calculator {
     return defaultPlaces
   }
 
-  /**
-   * 获取缓存实例或特定类型的缓存
-   * @remarks
-   * 支持三种调用方式：
-   * 1. 无参数时返回完整缓存存储对象
-   * 2. 传入有效缓存类型时返回对应Map实例
-   * 3. 传入无效类型时返回完整缓存并发出警告
-   *
-   * @param cacheType - 可选缓存类型，支持以下类型：
-   * 'sum' | 'subtractMultiple' | 'calcUnitPrice' | 'calcLinePrice' |
-   * 'percentToDecimal' | 'decimalToPercent' | 'calculateDiscountedPrice' | 'computeRate'
-   *
-   * @returns 缓存对象或指定类型的Map实例
-   *
-   * @example
-   * // 获取完整缓存
-   * const fullCache = CalcInst.getCache();
-   *
-   * @example
-   * // 获取求和缓存
-   * const sumCache = CalcInst.getCache('sum');
-   *
-   * @example
-   * // 获取无效类型会触发警告
-   * const invalidCache = CalcInst.getCache('invalidType'); // 控制台警告：Invalid cacheType: invalidType
-   */
   public getCache(): CacheStore
   public getCache(cacheType: keyof CacheStore): CacheStore[keyof CacheStore]
   public getCache(
@@ -420,15 +334,13 @@ export class Calculator {
     // 递归地对对象键进行排序以确保一致性
     const stableStringify = (obj: any): string => {
       if (obj === null || obj === undefined) return JSON.stringify(obj)
-
-      if (typeof obj !== 'object') return JSON.stringify(obj)
-
+      if (!isObject(obj)) return JSON.stringify(obj)
       if (Array.isArray(obj)) {
         return `[${obj.map(stableStringify).join(',')}]`
       }
 
-      // 对普通对象按键排序后处理
-      const sortedKeys = Object.keys(obj).sort()
+      // fix 递归处理每个值，确保嵌套对象、数组等结构的键顺序也被排序
+      const sortedKeys = Object.keys(obj).sort();
       const pairs = sortedKeys.map((key) => {
         return `${JSON.stringify(key)}:${stableStringify(obj[key])}`
       })
@@ -457,7 +369,10 @@ export class Calculator {
     }
     const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
 
-    const cacheKey = this.generateCacheKey({ data, mergedOptions })
+    const cacheKey = this.generateCacheKey({ 
+      data, 
+      mergedOptions,
+    })
     if (this.calcCache.sum.has(cacheKey)) {
       return this.calcCache.sum.get(cacheKey) as number
     }
@@ -483,11 +398,10 @@ export class Calculator {
       for (const num of numbersToSum) {
         totalDecimal = totalDecimal.add(new DecimalClone(num))
       }
+      const finalDigitNumber = mergedOptions.outputDecimalPlaces === -1 
+        ? -1 : mergedOptions.outputDecimalPlaces
+        // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
 
-      const finalDigitNumber =
-        mergedOptions.outputDecimalPlaces === -1 ? -1 : mergedOptions.outputDecimalPlaces
-
-      // finalDigitNumber 标识为-1 返回原始计算结果，否则用 用户设置精度
       total =
         finalDigitNumber === -1
           ? totalDecimal.toNumber()
@@ -723,7 +637,7 @@ export class Calculator {
 
     // 边界2 若原始价格为负数，不处理直接返原价
     if (isNumber(originalPrice) && originalPrice < 0) {
-      console.error('应确保传入参数 originalPrice 为一个正数')
+      console.error('参数 originalPrice 应该为大于 0 的数值')
       return originalPrice
     }
     // 边界3 折扣为0，直接返原价
@@ -929,14 +843,18 @@ export class Calculator {
     param2?: number | Partial<UserOptions>,
     param3?: RateType,
   ): number {
-    const args = Array.from(arguments)
     // 解析参数
-    let userRate: number
-    let userRateType: RateType
-    let userOptions: UserOptions
+    const args = Array.from(arguments)
     const curUserOptions = { ...this._getUserOptions() }
+    let userRateType: RateType = curUserOptions.rateType
+    let userOptions = {} as UserOptions
+    let userRate: number = curUserOptions.taxRate
     
-    // console.log('🚀 ~ >>>:', args, curUserOptions)
+    // 边界处理：originPrice 为 null/0 返回 0
+    if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
+      return 0
+    }
+
     if (args.length === 1 && isNumber(args[0])) {
       userRate = curUserOptions.taxRate
       userRateType = curUserOptions.rateType
@@ -952,12 +870,16 @@ export class Calculator {
       }
     }
     else if (args.length === 2 && isObject(param2)) {
-      if (param2.taxRate) userRate = param2?.taxRate
-      if (param2.rateType) userRateType = param2.rateType
+      if (param2.taxRate !== undefined) userRate = param2.taxRate
+      if (param2.rateType !== undefined) userRateType = param2.rateType
       userOptions = {
-        ...curUserOptions,
-        ...param2,
-      }
+      ...curUserOptions,
+      ...param2,
+    }
+    }
+    else if (args.length === 2 && (!isNumber(param2) || !isObject(param2))) {
+      console.error('param2 传参异常。请参考API文档传入正确的配置项')
+      return originPrice
     }
     // 显式传参 - 重载2
     else if (arguments.length === 3 && isNumber(param2) && isString(param3)) {
@@ -968,77 +890,43 @@ export class Calculator {
         taxRate: param2,
         rateType: param3,
       }
+
     }
-    else {
-      console.error('参数错误, 请查看API文档, 按正确的格式传参')
-      return originPrice
-    }
+
 
     if (isObject(userOptions)) {
       Object.entries(userOptions).forEach(([key, val]) => {
         curUserOptions[key] = val
       })
     }
-    
-    // TODO 参数的边界判断
-    // 边界处理：originPrice 为 null/0 返回 0
-    // if (originPrice === null || originPrice === 0 || !isNumber(originPrice) || Number.isNaN(originPrice)) {
-    //   return 0
-    // }
 
-    /**
-     * @remarks
-     * 修改逻辑：不处理 userRate 如果未提供则使用全局配置
-     * [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6) 如果无效直接返回 originPrice
-     */
-    // let curRate: number
-    // if (userRate === undefined) {
-    //   curRate = curUserOptions.taxRate
-    // } else if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
-    //   // ✅ 新增逻辑：当 userRate 无效时直接返回 originPrice
-    //   console.warn('userRate 无效，直接返回原始价格')
-    //   return originPrice
-    // } else if (userRate < 0 || userRate > 1) {
-    //   console.error('userRate 应为 [0, 1] 的小数，请检查 userRate 参数后重新尝试')
-    //   return originPrice
-    // } else {
-    //   curRate = userRate
-    // }
+    // console.log('🚀 ~ 传参 args >>> ', args, originPrice, curUserOptions)
+    const finalDigitNumber = userOptions.outputDecimalPlaces === -1 
+      ? -1 
+      : userOptions.outputDecimalPlaces
 
-    /**
-     * @remarks
-     * 原逻辑：处理 userRateType，如果未提供则使用全局配置
-     * 新逻辑：userRate 无效时直接返回 originPrice  [fix(issue-6)](https://github.com/Fridolph/utils-calculator/issues/6)
-     */
-    // let curRateType: RateType
-    // if (userRateType === undefined) {
-    //   curRateType = curUserOptions.rateType
-    // }
-    // else if (!['gst_free', 'incl_gst', 'excl_gst'].includes(userRateType)) {
-    //   console.warn(`Invalid rate type: ${userRateType}, 使用全局rateType配置`)
-    //   curRateType = curUserOptions.rateType
-    // }
-    // else {
-    //   curRateType = userRateType
-    // }
 
-    const cacheKey = this.generateCacheKey({ originPrice, userOptions })
+    if (userRate === null || Number.isNaN(userRate) || typeof userRate !== 'number') {
+      console.warn('参数 Rate 无效，直接返回原始价格')
+      return originPrice
+    }
+    else if (userRate < 0) {
+      console.warn(`参数 Rate 应大于0。当前参数错误, 使用默认税率 ${ curUserOptions.taxRate }`)
+      userRate = curUserOptions.taxRate // ✅ 使用默认税率而非直接返回
+    }
+
+    const cacheKey = this.generateCacheKey({ originPrice, userOptions, finalDigitNumber })
 
     if (this.calcCache.computeRate.has(cacheKey)) {
       return this.calcCache.computeRate.get(cacheKey) as number
     }
 
     const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
-    const finalDigitNumber = userOptions.outputDecimalPlaces === -1 
-      ? -1 
-      : userOptions.outputDecimalPlaces
-
-      
     const addedRate = DecimalClone(1).add(userOptions.taxRate).toNumber()
     const rateCalculators: { [key in RateType]: (price: number) => Decimal } = {
-      gst_free: () => DecimalClone(0),
-      incl_gst: (price) => DecimalClone(price).div(addedRate).mul(userOptions.taxRate),
-      excl_gst: (price) =>
+      FREE: () => DecimalClone(0),
+      INCL: (price) => DecimalClone(price).div(addedRate).mul(userOptions.taxRate),
+      EXCL: (price) =>
         DecimalClone(price).mul(userOptions.taxRate),
     }
 
@@ -1046,17 +934,16 @@ export class Calculator {
     // 添加默认处理，防止访问不存在的键
     const calculator = rateCalculators[userOptions.rateType]
     if (!calculator) {
-      console.error(`Invalid rate type: ${userOptions.rateType}`)
+      console.error(`参数 ${userOptions.rateType} 类型错误`)
       return originPrice
     }
     
     // 精度处理逻辑
     const finalResult = finalDigitNumber === -1
       ? calculator(originPrice).toNumber()
-      : calculator(originPrice).toDP(userOptions.outputDecimalPlaces).toNumber()
+      : calculator(originPrice).toDP(finalDigitNumber).toNumber()
 
-    // console.log('finalResult', finalResult)
-    // console.log('finalResult', finalResult)
+    // console.log(calculator(originPrice), '>>> finalResult >>> ', finalResult)
 
     this.calcCache.computeRate.set(cacheKey, finalResult)
     return finalResult

@@ -21,9 +21,10 @@ type UserOptions = {
   outputDecimalPlaces: number
   taxRate: number
   rateType: RateType
+  [key: string]: unknown
 }
 
-type RateType = 'excl_gst' | 'incl_gst' | 'gst_free'
+type RateType = 'INCL' | 'EXCL' | 'FREE'
 
 interface NumberFormatOptions {
   symbol?: string
