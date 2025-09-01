@@ -42,6 +42,10 @@ describe('subtractMultiple()', () => {
       expect(CalcInst.subtractMultiple(5, [0])).toBe(5)
       expect(CalcInst.subtractMultiple(0, [0])).toBe(0)
     })
+
+    it('处理负数初始值与负数减数', () => {
+      expect(CalcInst.subtractMultiple(-10, [-3, -2])).toBe(-5) // -10 - (-3) - (-2) = -5
+    })
   })
 
   describe('精度配置验证', () => {

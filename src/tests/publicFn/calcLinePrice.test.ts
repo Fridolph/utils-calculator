@@ -5,10 +5,6 @@ describe('calcLinePrice()', () => {
     CalcInst.resetInstance()
   })
 
-  // describe('debugger >>> 精度配置测试', () => {
-
-  // })
-
   describe('正常计算场景', () => {
     it('当quantity和unitPrice都不为null时，正常计算linePrice', () => {
       const params = { quantity: 2, unitPrice: 3 }
@@ -48,6 +44,18 @@ describe('calcLinePrice()', () => {
       expect(result.quantity).toBe(0)
       expect(result.unitPrice).toBe(10)
       expect(result.linePrice).toBe(0)
+    })
+    
+    it('quantity 为负数时应强制转为 0', () => {
+      const params = { quantity: -2, unitPrice: 3 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(0)
+    })
+  
+    it('unitPrice 为负数时应保留负值', () => {
+      const params = { quantity: 2, unitPrice: -3 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(-6)
     })
   })
 

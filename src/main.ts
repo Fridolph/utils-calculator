@@ -558,6 +558,10 @@ export class Calculator {
     // 明确边界处理逻辑，这里统一返回null
     if (!isNumber(quantity) || Number.isNaN(quantity)) quantity = null
     if (!isNumber(unitPrice) || Number.isNaN(unitPrice)) unitPrice = null
+    if (isNumber(quantity) && quantity <= 0) {
+      console.warn('参数错误, quantity 必须大于等于 0。这里按 0 处理来处理')
+      quantity = 0
+    }
     if (quantity === null && isNumber(unitPrice) && unitPrice >= 0) {
       return {
         quantity,
@@ -844,7 +848,7 @@ export class Calculator {
     param3?: RateType,
   ): number {
     // 解析参数
-    const args = Array.from(arguments)
+    const args = [originPrice, param2, param3].filter(arg => arg !== undefined)
     const curUserOptions = { ...this._getUserOptions() }
     let userRateType: RateType = curUserOptions.rateType
     let userOptions = {} as UserOptions
@@ -882,7 +886,7 @@ export class Calculator {
       return originPrice
     }
     // 显式传参 - 重载2
-    else if (arguments.length === 3 && isNumber(param2) && isString(param3)) {
+    else if (args.length === 3 && isNumber(param2) && isString(param3)) {
       userRate = param2
       userRateType = param3
       userOptions = {

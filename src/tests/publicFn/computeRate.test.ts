@@ -1,7 +1,22 @@
 import { CalcInst } from '../../main'
 
+// describe('debugger >>> Calculator.computeRate()', () => {
+//   beforeEach(() => {
+//     CalcInst.resetInstance()
+//   })
+
+//   it('超大数值的税率计算', () => {
+//     const result = CalcInst.computeRate(1e15, { taxRate: 0.1, outputDecimalPlaces: 0 })
+//     // 1e15 -> 1000000000000000  16个0 计算后自身精度丢1 -> 15位 * 0.1 
+//     // 90909090909090.9 -> 由于 outputDecimalPlaces为0 四舍五入了  -> 90909090909091
+//     expect(result).toBe(90909090909091)
+//   })
+// })
+
 describe('Calculator.computeRate()', () => {
-  
+  beforeEach(() => {
+    CalcInst.resetInstance()
+  })
   
   describe('基础功能测试', () => {
     // 基础用法
@@ -49,6 +64,17 @@ describe('Calculator.computeRate()', () => {
       expect(CalcInst.computeRate(100, 0.333333)).toBe(24.99998) // 24.99998124999531
       CalcInst.setUserOption('outputDecimalPlaces', 6)
       expect(CalcInst.computeRate(100, 0.333333)).toBe(24.999981) // 24.99998124999531
+    })
+  })
+
+  describe('computeRate() 参数组合测试', () => {
+    it('应优先使用方法级 rateType 配置', () => {
+      CalcInst.setUserOption('rateType', 'INCL')
+      expect(CalcInst.computeRate(100, { rateType: 'EXCL' })).toBe(10) // 默认税率 0.1
+    })
+
+    it('FREE 类型应强制覆盖非零税率', () => {
+      expect(CalcInst.computeRate(100, { rateType: 'FREE', taxRate: 0.2 })).toBe(0)
     })
   })
   
@@ -136,6 +162,17 @@ describe('Calculator.computeRate()', () => {
       expect(CalcInst.computeRate(0, 0.1)).toBe(0) // 0元处理
       expect(CalcInst.computeRate(-50, { outputDecimalPlaces: 4, taxRate: 0.2211 })).toBe(-9.0533) // 负数处理
       expect(CalcInst.computeRate(100, NaN as any)).toBe(100) // NaN处理
+    })
+
+    it('gst_free 类型下负数价格返回 0', () => {
+      expect(CalcInst.computeRate(-100, { rateType: 'FREE' })).toBe(0)
+    })
+
+    it('超大数值的税率计算', () => {
+      const result = CalcInst.computeRate(1e15, { taxRate: 0.1, outputDecimalPlaces: 0 })
+      // 1e15 -> 1000000000000000  16个0 计算后自身精度丢1 -> 15位 * 0.1 
+      // 90909090909090.9 -> 由于 outputDecimalPlaces为0 四舍五入了  -> 90909090909091
+      expect(result).toBe(90909090909091)
     })
   })
 

@@ -2,20 +2,25 @@ import { CalcInst } from '../../main'
 
 // describe('debugger >>> 基础功能测试', () => {
 //   beforeEach(() => {
-//     CalcInst.clearCache('decimalToPercent')
+//     CalcInst.resetInstance()
 //   })
 
-//   it('decimalToPercent() - 测试无效参数', () => {
-//     expect(CalcInst.decimalToPercent(0.5, 'invalid' as any)).toBe(50)
+//   it('极小值处理 - 保留精度', () => {
+//     expect(CalcInst.decimalToPercent(0.00000001)).toBe(0.000001)
+//     expect(CalcInst.decimalToPercent(0.00000001, 5)).toBe(0) // 0.000001 -> 0
+//     expect(CalcInst.decimalToPercent(0.0000009, 4)).toBe(0.0001) // 0.00009 -> 0.0001
 //   })
 // })
 
 describe('Calculator.decimalToPercent()', () => {
   beforeEach(() => {
-    CalcInst.clearCache('decimalToPercent')
+    CalcInst.resetInstance()
   })
-  
+
   describe('基础功能测试', () => {
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     
     // 正常转换场景
     it('基础用法 - 正常小数转换', () => {
@@ -24,8 +29,10 @@ describe('Calculator.decimalToPercent()', () => {
     })
   })
 
-  describe('异常输入 和 边界值测试', () => {
-
+  describe('边界值测试', () => {
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     // 边界值处理
     it('边界值处理 - null/0/NaN输入', () => {
       expect(CalcInst.decimalToPercent(null)).toBe(0)
@@ -33,6 +40,16 @@ describe('Calculator.decimalToPercent()', () => {
       expect(CalcInst.decimalToPercent(NaN)).toBe(0)
     })
 
+
+    it('科学计数法输入应正确处理', () => {
+      expect(CalcInst.decimalToPercent(1e-5)).toBe(0.001)
+    })
+  })
+
+  describe('异常输入', () => {
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     // 异常值处理
     it('异常值处理 - 非数字输入', () => {
       expect(CalcInst.decimalToPercent('abc' as any)).toBe(0)
@@ -45,9 +62,17 @@ describe('Calculator.decimalToPercent()', () => {
       expect(CalcInst.decimalToPercent(-0.5)).toBe(-50)
       expect(CalcInst.decimalToPercent(-0.333333, 3)).toBe(-33.333) // -33.3333
     })
+
+    it('decimalPlaces 为负数时应使用默认配置', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 2)
+      expect(CalcInst.decimalToPercent(0.5555, -1)).toBe(55.55)
+    })
   })
 
   describe('边界值，极值应该也能按预期工作', () => {
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     // 零值边界处理
     it('零值边界处理', () => {
       expect(CalcInst.decimalToPercent(0.0)).toBe(0)
@@ -63,6 +88,9 @@ describe('Calculator.decimalToPercent()', () => {
   })
 
   describe('传参校验 及 精度校验', () => {
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     // 参数校验测试
     it('decimalPlaces参数校验', () => {
       // 小于0的处理
@@ -95,6 +123,9 @@ describe('Calculator.decimalToPercent()', () => {
   })
 
   describe('缓存验证', () => { 
+    beforeEach(() => {
+      CalcInst.resetInstance()
+    })
     // 缓存验证
     it('相同输入命中缓存', () => {
       const cacheSize = CalcInst.getCache().decimalToPercent.size

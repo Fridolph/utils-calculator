@@ -24,9 +24,13 @@ describe('sum()', () => {
       expect(CalcInst.sum([-1, -2, -3])).toBe(-6)
       expect(CalcInst.sum([-10, 5, 3.5])).toBe(-1.5)
     })
+
+    it('科学计数法输入的高精度累加', () => {
+      expect(CalcInst.sum([1e-15, 2e-15])).toBe(3e-15)
+    })
   })
 
-  describe('极端输入处理', () => {
+  describe('边界处理、极端输入 处理', () => {
     it('计算超小值，科学计数法的小数', () => {
       expect(CalcInst.sum([0.0000000001, 0.0000000002])).toBe(3e-10) // 0.0000000003 科学计数法 3e-10
     })
@@ -39,9 +43,15 @@ describe('sum()', () => {
       expect(CalcInst.sum([1.1111111, 2.22222, 3.33333])).toBe(6.6666611)
       expect(CalcInst.sum({ a: 1.1111111, b: 2.22222, c: 3.33333 })).toBe(6.6666611)
     })
+
+    it('keepParamsMaxPrecision 为 true 时保留最大精度', () => {
+      CalcInst.setUserOption('keepParamsMaxPrecision', true)
+      CalcInst.setUserOption('outputDecimalPlaces', 2)
+      expect(CalcInst.sum([1.1, 2.22, 3.333])).toBe(6.65) // 1.1+2.22+3.333=6.653（不四舍五入）
+    })
   })
 
-  describe('异常输入 及 边界处理', () => {
+  describe('异常输入', () => {
     it('空数组 返0', () => {
       expect(CalcInst.sum([])).toBe(0)
     })
@@ -130,6 +140,25 @@ describe('sum()', () => {
       expect(CalcInst.sum([0.99999999, 0.00000001])).toBe(1)
       CalcInst.setUserOption('outputDecimalPlaces', 2)
     })
+  })
+
+  describe('sum() 嵌套对象处理', () => {
+    // TODO 后续再加，可以处理多层嵌套对象里的数字
+    it('应正确处理嵌套对象的递归求和', () => {
+      const nestedObj = { 
+        a: 1, 
+        b: 2, 
+        c: 3, 
+        d: 4,
+        e: 5,
+      }
+      expect(CalcInst.sum(nestedObj)).toBe(15)
+    })
+
+    // it('应处理包含 Infinity 的数组', () => {
+    //   expect(CalcInst.sum([Infinity, 1])).toBe(Infinity)
+    //   expect(CalcInst.sum([-Infinity, 1])).toBe(-Infinity)
+    // })
   })
 
   describe('缓存机制验证', () => {

@@ -124,6 +124,11 @@ describe('percentToDecimal()', () => {
 
       expect(CalcInst.percentToDecimal(66.3333)).toBe(0.663333)
     })
+
+    it('outputDecimalPlaces 为 -1 返回原始值', () => {
+      const result = CalcInst.percentToDecimal(33.333333, { outputDecimalPlaces: -1 })
+      expect(result).toBe(0.33333333)
+    })
   })
 
   describe('缓存机制验证', () => {
