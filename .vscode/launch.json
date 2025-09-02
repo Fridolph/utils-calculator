@@ -12,7 +12,7 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/src/tests/sum.test.ts",
+      "program": "${workspaceFolder}/src/main.ts",
       "outFiles": [
         "${workspaceFolder}/**/*.js"
       ]
