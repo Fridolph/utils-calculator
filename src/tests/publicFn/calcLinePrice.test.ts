@@ -1,138 +1,159 @@
-import { CalcInst, Calculator } from '../../main'
+import { CalcInst } from '../../main'
 
 describe('calcLinePrice()', () => {
   beforeEach(() => {
-    CalcInst.clearCache()
-    CalcInst.setOption('precision', 2)
-    CalcInst.setOption('taxRate', 0.1)
-    CalcInst.setOption('rateType', 'incl_gst')
+    CalcInst.resetInstance()
   })
 
-  it('should calculate line price correctly with valid inputs', () => {
-    // 正常计算场景
-    expect(CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 })).toEqual({
-      quantity: 4,
-      unitPrice: 5,
-      linePrice: 20,
-    })
-
-    // 浮点数计算验证
-    expect(CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.33 })).toEqual({
-      quantity: 3,
-      unitPrice: 3.33,
-      linePrice: 9.99,
-    })
-
-    // 自定义精度测试
-    CalcInst.setOption('precision', 3)
-    expect(CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 })).toEqual({
-      quantity: 3,
-      unitPrice: 3.333,
-      linePrice: 9.999,
-    })
-    CalcInst.setOption('precision', 2) // 恢复默认值
-  })
-
-  it('should return null for null inputs', () => {
-    // quantity为null时返回null
-    expect(CalcInst.calcLinePrice({ quantity: null, unitPrice: 10 })).toEqual({
-      quantity: null,
-      unitPrice: 10,
-      linePrice: 10,
-    })
-
-    // unitPrice为null时返回null
-    expect(CalcInst.calcLinePrice({ quantity: 5, unitPrice: null })).toEqual({
-      quantity: 5,
-      unitPrice: null,
-      linePrice: null,
-    })
-
-    // 全null输入场景
-    expect(CalcInst.calcLinePrice({ quantity: null, unitPrice: null })).toEqual(
-      {
-        quantity: null,
-        unitPrice: null,
-        linePrice: null,
-      }
-    )
-  })
-
-  it('should handle zero values correctly', () => {
-    // quantity=0时返回0
-    expect(CalcInst.calcLinePrice({ quantity: 0, unitPrice: 5 })).toEqual({
-      quantity: 0,
-      unitPrice: 5,
-      linePrice: 0,
-    })
-
-    // unitPrice=0时返回0
-    expect(CalcInst.calcLinePrice({ quantity: 5, unitPrice: 0 })).toEqual({
-      quantity: 5,
-      unitPrice: 0,
-      linePrice: 0,
-    })
-
-    // 双零场景
-    expect(CalcInst.calcLinePrice({ quantity: 0, unitPrice: 0 })).toEqual({
-      quantity: 0,
-      unitPrice: 0,
-      linePrice: 0,
+  describe('正常计算场景', () => {
+    it('当quantity和unitPrice都不为null时，正常计算linePrice', () => {
+      const params = { quantity: 2, unitPrice: 3 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(6)
     })
   })
 
-  it('should maintain original values for non-null inputs', () => {
-    // 保留原始linePrice字段（即使传入值会被覆盖）
-    const input = { quantity: 2, unitPrice: 50, linePrice: 100 }
-    const result = CalcInst.calcLinePrice(input)
-    expect(result).toEqual({
-      quantity: 2,
-      unitPrice: 50,
-      linePrice: 100, // 虽然计算结果为100，但保留原始值
+  describe('边界值测试', () => {
+    it('quantity和unitPrice都为null时，返回全null对象', () => {
+      const params = { quantity: null, unitPrice: null }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(null)
+      expect(result.unitPrice).toBe(null)
+      expect(result.linePrice).toBe(null)
+    })
+
+    it('quantity为null时，unitPrice等于linePrice', () => {
+      const params = { quantity: null, unitPrice: 5 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(null)
+      expect(result.unitPrice).toBe(5)
+      expect(result.linePrice).toBe(5)
+    })
+
+    it('linePrice为null时，返回null总价', () => {
+      const params = { quantity: 3, unitPrice: null }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(3)
+      expect(result.unitPrice).toBe(null)
+      expect(result.linePrice).toBe(null)
+    })
+
+    it('quantity为0时，强制unitPrice等于linePrice', () => {
+      const params = { quantity: 0, unitPrice: 10 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(0)
+      expect(result.unitPrice).toBe(10)
+      expect(result.linePrice).toBe(0)
+    })
+    
+    it('quantity 为负数时应强制转为 0', () => {
+      const params = { quantity: -2, unitPrice: 3 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(0)
+    })
+  
+    it('unitPrice 为负数时应保留负值', () => {
+      const params = { quantity: 2, unitPrice: -3 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(-6)
     })
   })
 
-  it('should utilize cache mechanism correctly', () => {
-    const cacheKeySpy = jest.spyOn(CalcInst as any, 'generateCacheKey')
-    const input = { quantity: 5, unitPrice: 20 } as CalcBaseTotalParams
-
-    // 第一次调用生成缓存
-    CalcInst.calcLinePrice(input)
-    // 第二次相同输入应命中缓存
-    CalcInst.calcLinePrice(input)
-
-    // 验证generateCacheKey调用次数
-    // expect(cacheKeySpy).toHaveBeenCalledTimes(1)
-
-    // 验证缓存存储正确性
-    const cache = CalcInst.getCache('calcLinePrice')
-    const cacheKey = cacheKeySpy.mock.results[0]?.value
-    expect(cache.has(cacheKey)).toBe(true)
-
-    cacheKeySpy.mockRestore()
-  })
-
-  it('should respect custom precision configuration', () => {
-    // 测试自定义精度对计算结果的影响
-    CalcInst.setOption('precision', 4)
-
-    // 验证4位精度计算
-    expect(CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.3333 })).toEqual({
-      quantity: 3,
-      unitPrice: 3.3333,
-      linePrice: 9.9999, // 3 * 3.3333 = 9.9999
+  describe('异常输入处理', () => {
+    it('处理quantity为非数字的情况', () => {
+      const params = { quantity: 'two' as any, unitPrice: 5 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(null)
+      expect(result.unitPrice).toBe(5)
+      expect(result.linePrice).toBe(5)
     })
 
-    // 验证更高位小数的四舍五入处理
-    expect(CalcInst.calcLinePrice({ quantity: 2, unitPrice: 2.34567 })).toEqual(
-      {
-        quantity: 2,
-        unitPrice: 2.3457,
-        linePrice: 4.6913, // 2 * 2.34567 = 4.69134 → 保留4位后四舍五入为4.6913
-      }
-    )
+    it('处理unitPrice为非数字的情况', () => {
+      const params = { quantity: 2, unitPrice: 'five' as any }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(2)
+      expect(result.unitPrice).toBe(null)
+      expect(result.linePrice).toBe(null)
+    })
 
-    // 恢复默认精度
-    CalcInst.setOption('precision', 2)
+    it('处理quantity和unitPrice都为非数字的情况', () => {
+      const params = { quantity: 'three' as any, unitPrice: 'six' as any }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.quantity).toBe(null)
+      expect(result.unitPrice).toBe(null)
+      expect(result.linePrice).toBe(null)
+    })
+  })
+
+  describe('精度配置测试', () => {
+    it('检查默认精度下的计算结果', () => {
+      const params = { quantity: 2.22, unitPrice: 3.33 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBeCloseTo(2.22 * 3.33)
+    })
+
+    it('精度为8时的极限小数计算', () => {
+      const params = { quantity: 0.00000001, unitPrice: 0.00000001 }
+      const result = CalcInst.calcLinePrice(params)
+      expect(result.linePrice).toBe(0.0000000000000001)
+    })
+
+    it('配置不同精度的结果应符合预期', () => {
+      const params = { quantity: 1.111, unitPrice: 2.222 }
+      const result1 = CalcInst.calcLinePrice(params, { outputDecimalPlaces: 0 })
+      const result2 = CalcInst.calcLinePrice(params, { outputDecimalPlaces: 1 })
+      const result3 = CalcInst.calcLinePrice(params, { outputDecimalPlaces: 2 })
+
+      expect(result1.linePrice).toBeCloseTo(1.111 * 2.222, 0)
+      expect(result2.linePrice).toBeCloseTo(1.111 * 2.222, 1)
+      expect(result3.linePrice).toBeCloseTo(1.111 * 2.222, 2)
+    })
+  })
+
+  describe('缓存机制验证', () => {
+    it('应该正确命中缓存，重复命中不会增加计算次数', () => {
+      CalcInst.clearCache('all')
+
+      // 第一次调用生成缓存
+      const params1 = { quantity: 1, unitPrice: 2 }
+      CalcInst.calcLinePrice(params1)
+
+      // 第二次相同输入应命中缓存
+      const params2 = { quantity: 1, unitPrice: 2 }
+      CalcInst.calcLinePrice(params2)
+      expect(CalcInst.getCache().calcLinePrice.size).toBe(1)
+
+      // 新的计算，生成两条缓存记录
+      const params3 = { quantity: 3, unitPrice: 4 }
+      const params4 = { quantity: 3, unitPrice: 4 }
+      CalcInst.calcLinePrice(params3)
+      CalcInst.calcLinePrice(params4)
+      expect(CalcInst.getCache().calcLinePrice.size).toBe(2)
+      CalcInst.clearCache('all')
+    })
+
+    it('应确保不同配置，生成各自唯一的缓存键', () => {
+      CalcInst.clearCache('all')
+      const params1 = { quantity: 1, unitPrice: 2 }
+      CalcInst.calcLinePrice(params1, { outputDecimalPlaces: 2 })
+      expect(CalcInst.getCache().calcLinePrice.size).toBe(1)
+      const params2 = { quantity: 1, unitPrice: 2 }
+      CalcInst.calcLinePrice(params2, { outputDecimalPlaces: 3 })
+      expect(CalcInst.getCache().calcLinePrice.size).toBe(2)
+    })
+
+    it('应确保对象属性顺序不影响缓存键一致性', () => {
+      const params1 = { quantity: 1, unitPrice: 2 }
+      const params2 = { unitPrice: 2, quantity: 1 }
+      const key1 = CalcInst.generateCacheKey({
+        data: params1,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
+      const key2 = CalcInst.generateCacheKey({
+        data: params2,
+        mergedOptions: CalcInst._getUserOptions(),
+      })
+      expect(key1).toBe(key2)
+    })
   })
 })

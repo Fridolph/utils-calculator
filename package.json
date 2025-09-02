@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npx tsc",
-    "lint": "pnpm exec biome lint --write ./src",
+    "lint": "pnpm exec biome lint --write src",
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
@@ -34,7 +34,8 @@
   "license": "Apache License",
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {
-    "currency.js": "^2.0.4"
+    "currency.js": "^2.0.4",
+    "decimal.js": "^10.6.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
