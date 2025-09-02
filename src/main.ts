@@ -342,7 +342,7 @@ export class Calculator {
       // fix 递归处理每个值，确保嵌套对象、数组等结构的键顺序也被排序
       const sortedKeys = Object.keys(obj).sort();
       const pairs = sortedKeys.map((key) => {
-        return `${JSON.stringify(key)}:${stableStringify(obj[key])}`
+        return `${JSON.stringify(key)}:${stableStringify((obj as Record<string, any>)[key])}`
       })
 
       return `{${pairs.join(',')}}`
