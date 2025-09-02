@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/Fridolph/utils-calculator/compare/v1.0.0...v2.0.0) (2025-09-02)
+
 ## [1.0.0](https://github.com/Fridolph/utils-calculator/compare/v2.1.0...v1.0.0) (2025-09-02)
 
 
@@ -13,7 +15,6 @@ All notable changes to this project will be documented in this file. See [standa
 * :sparkles: 方法重构，并添加对应测试用例 ([34987ce](https://github.com/Fridolph/utils-calculator/commit/34987ce0291af26395c598701eebca7c0aa04fee))
 * 进行中 - 替换 Decimal 作为基础计算库 ([2e88a75](https://github.com/Fridolph/utils-calculator/commit/2e88a75649688a24d9b5b6ada4ae599651012fb6))
 
-
 ### Bug Fixes
 
 * :bug: 完善 sum 方法及相关判断逻辑 ([07a464b](https://github.com/Fridolph/utils-calculator/commit/07a464b7dbc01767a811c240d8d845a1da2535b7))
@@ -21,8 +22,6 @@ All notable changes to this project will be documented in this file. See [standa
 * :rotating_light: 修改一个类型报错 ([dca206b](https://github.com/Fridolph/utils-calculator/commit/dca206be1db0463d64e20d280115721479642697))
 * **issue-7:** :bug: 完善 computeRate 边界判断逻辑，以符合测试用例的预期结果 ([43dfa59](https://github.com/Fridolph/utils-calculator/commit/43dfa59a87fa07579c60eecc4e55a9491262defb))
 * 修复一个lint 报错 ([cec9789](https://github.com/Fridolph/utils-calculator/commit/cec978927c43df897fd4e95c65a9588e8b36aa98))
-
-## [2.0.0](https://github.com/Fridolph/utils-calculator/compare/v2.1.0...v2.0.0) (2025-09-02)
 
 
 ### Features
