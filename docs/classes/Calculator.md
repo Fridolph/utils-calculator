@@ -1,4 +1,4 @@
-[**utils-calculator v1.1.2**](../README.md)
+[**utils-calculator v2.0.0**](../README.md)
 
 ***
 
@@ -6,68 +6,43 @@
 
 # Class: Calculator
 
-核心计算类
-
-## Remarks
-
-提供多种计算方法和缓存优化机制，适用于金融、电商等需要高精度计算的场景
-
-## Example
-
-```ts
-const calc = Calculator.getInstance()
-calc.sum([1, 2, 3]) // 6
-calc.decimalToPercent(0.66666666, 4) // 66.6667
-```
-当然也可以直接使用单例模式
-```ts
-CalcInst.sum([1,2,3,4]) // 10
-CalcInst.percentToDecimal(55.66, 4) // 0.5566
-```
-
 ## Properties
-
-### baseOptions
-
-> **baseOptions**: `BaseOptions`
-
-***
 
 ### calcCache
 
 > **calcCache**: `CacheStore`
 
+***
+
+### calcConfigs
+
+> **calcConfigs**: `Config`
+
+***
+
+### userOptions
+
+> **userOptions**: `UserOptions`
+
 ## Methods
 
-### \_getMergedOptions()
+### \_getCalcConfigs()
 
-> **\_getMergedOptions**(`userOptions?`): `object`
-
-#### Parameters
-
-##### userOptions?
-
-`Partial`\<`BaseOptions`\>
+> **\_getCalcConfigs**(): `Config`
 
 #### Returns
 
-`object`
+`Config`
 
-##### precision
+***
 
-> **precision**: `number`
+### \_getUserOptions()
 
-##### rateType
+> **\_getUserOptions**(): `UserOptions`
 
-> **rateType**: `RateType`
+#### Returns
 
-##### runtimePrecision
-
-> **runtimePrecision**: `10` = `curOptions.runtimePrecision`
-
-##### taxRate
-
-> **taxRate**: `number`
+`UserOptions`
 
 ***
 
@@ -75,7 +50,7 @@ CalcInst.percentToDecimal(55.66, 4) // 0.5566
 
 > **calcLinePrice**(`calcBaseTotalParams`, `userOptions?`): `CalcBaseTotalParams`
 
-基础公式: 总价 = 数量 * 单价
+根据公式计算总价
 
 #### Parameters
 
@@ -83,112 +58,74 @@ CalcInst.percentToDecimal(55.66, 4) // 0.5566
 
 `Required`\<`Omit`\<`CalcBaseTotalParams`, `"linePrice"`\>\>
 
-计算参数对象，必须包含以下字段：
-- quantity: 数量（可为null）
-- unitPrice: 单价（可为null）
-- 注意：linePrice字段会被忽略
-
 ##### userOptions?
 
-`BaseOptions`
+`Partial`\<`UserOptions`\>
 
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（固定为8）
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此配置用于控制计算结果的精度。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
 #### Returns
 
 `CalcBaseTotalParams`
 
-包含完整计算结果的对象：
-- quantity: 原样返回输入值
-- unitPrice: 原样返回输入值
-- linePrice: 计算结果（可能为null）
+返回一个包含数量、单价和总价的对象。对于不同的输入情况有不同的返回值：
+ - 当 `quantity` 和 `unitPrice` 都为 `null` 时，返回全 `null` 对象，即 `{ quantity: null, unitPrice: null, linePrice: null }`。
+ - 当 `quantity` 为 `null` 时，`unitPrice` 等于 `linePrice`。
+ - 当 `linePrice` 为 `null` 时，返回 `null` 总价。
+ - 当 `quantity` 为 `0` 时，`unitPrice` 保持不变，`linePrice` 为 `0`。
 
-#### Remarks
+#### Description
 
-支持多种边界场景处理和高精度计算，适用于电商、金融等场景的总价计算需求
+`公式：总价 = 单价 * 数量`. 根据商品的数量（quantity）和单价（unitPrice）计算总价（linePrice），并返回包含数量、单价和总价的对象。此方法针对多种边界条件、异常输入进行了处理，并支持用户自定义计算精度，同时具备缓存机制以提高计算效率。
 
-#### Example
-
-```ts
-// 基础用法
-CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 }) // { quantity:4, unitPrice:5, linePrice:20 }
-
-// 浮点数计算
-CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.33 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
-
-// 自定义精度
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.333 }) // { quantity:3, unitPrice:3.333, linePrice:9.999 }
-
-// 边界处理
-CalcInst.calcLinePrice({ quantity: null, unitPrice: 50 }) // { quantity:null, unitPrice:50, linePrice:50 }
-CalcInst.calcLinePrice({ quantity: 5, unitPrice: null }) // { quantity:5, unitPrice:null, linePrice:null }
-```
-
-#### Performance
-
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
-
-#### Error Handling
-
-自动处理以下异常情况：
-- quantity和unitPrice同时为null：返回全null对象
-- quantity为null时：强制linePrice等于unitPrice
-- unitPrice为null时：返回null总价
-- 非数字值传入：通过类型校验确保不会出现
-
-#### Caching
-
-缓存键生成策略：
-- 基于calcBaseTotalParams和userOptions生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('calcLinePrice')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
-
-#### See
-
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
- - CalcBaseTotalParams - 参数类型定义
-
-#### Test Cases
+#### Examples
 
 ```ts
 // 正常计算
-expect(CalcInst.calcLinePrice({ quantity: 4, unitPrice: 5 })).toEqual({
-  quantity: 4, unitPrice: 5, linePrice: 20
-})
-
-// quantity为null的场景
-expect(CalcInst.calcLinePrice({ quantity: null, unitPrice: 50 })).toEqual({
-  quantity: null, unitPrice: 50, linePrice: 50
-})
-
-// unitPrice为null的场景
-expect(CalcInst.calcLinePrice({ quantity: 5, unitPrice: null })).toEqual({
-  quantity: 5, unitPrice: null, linePrice: null
-})
-
-// 高精度场景
-expect(CalcInst.calcLinePrice({ quantity: 3, unitPrice: 3.3333 }, { precision: 4 })).toEqual({
-  quantity: 3, unitPrice: 3.3333, linePrice: 9.9999
-})
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().calcLinePrice.size
-CalcInst.calcLinePrice({ quantity: 5, unitPrice: 20 })
-expect(CalcInst.getCache().calcLinePrice.size).toBe(cacheSize + 1)
+const params = { quantity: 3, unitPrice: 4 };
+const result = CalcInst.calcLinePrice(params);
+expect(result.linePrice).toBe(12);
 ```
+
+```ts
+// quantity 为 null 的情况
+const params = { quantity: null, unitPrice: 5 };
+const result = CalcInst.calcLinePrice(params);
+expect(result.quantity).toBe(null),
+expect(result.unitPrice).toBe(5),
+expect(result.linePrice).toBe(5);
+```
+
+```ts
+// 使用自定义配置选项
+const params = { quantity: 1.11, unitPrice: 2.22 };
+const result = CalcInst.calcLinePrice(params, { outputDecimalPlaces: 1 });
+expect(result.linePrice).toBeCloseTo(1.11 * 2.22, 1);
+```
+
+#### Throws
+
+当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
+
+#### See
+
+ - UserOptions 用于查看用户配置选项的详细类型定义。
+ - CalcBaseTotalParams 用于查看返回对象的详细类型定义。
+
+#### Description
+
+- 在计算总价时，会根据传入的 `quantity` 和 `unitPrice` 值进行不同的处理。
+ - 对于非数字类型的 `quantity` 或 `unitPrice`，会进行特定的转换和处理以确保计算的正确性。
+ - 精度计算方面，使用内部机制确保计算结果符合用户指定的精度要求（通过 `outputDecimalPlaces` 配置）。
+ - 缓存机制基于输入的参数对象和配置选项生成唯一的缓存键，相同输入的计算结果会从缓存中获取，避免重复计算。
 
 ***
 
@@ -196,124 +133,87 @@ expect(CalcInst.getCache().calcLinePrice.size).toBe(cacheSize + 1)
 
 > **calculateDiscountedPrice**(`originalPrice`, `discountRate`, `userOptions?`): `null` \| `number`
 
-计算折扣后的价格
+计算折扣价.
 
 #### Parameters
 
 ##### originalPrice
 
-原始价格，支持以下处理：
-- null/NaN：自动转为null继续计算
-- 非数字类型：强制转为null
-- 负数价格：直接返回原始价格
-- 正常数值：如 100 元
+商品的原始价格。如果输入为 `null` 或非数字类型，将返回 `null`；如果为负数，将按照特定规则处理。
 
 `null` | `number`
 
 ##### discountRate
 
-折扣率（0-1之间的小数），支持以下处理：
-- null：自动转为null继续计算
-- NaN：自动转为null
-- 负值：强制转为0（不打折）
-- 1：白送场景返回0
-- 默认值：无默认值需显式传参
+折扣率，取值范围理论上为 0 到 1 之间，但负数折扣率和非 `null` 非数字输入会有特殊处理。当值为 `null` 或非数字类型时，返回 `null`；当折扣率为 0 时，返回原始价格；当折扣率为 1 时，返回 0（免费）。
 
 `null` | `number`
 
 ##### userOptions?
 
-`BaseOptions`
+`Partial`\<`UserOptions`\>
 
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（固定为8）
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于配置计算结果的精度。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
 #### Returns
 
 `null` \| `number`
 
-折扣后的价格（可能为null）：
-- 成功计算返回number
-- 非法输入返回null
+- 返回折扣后的价格，如果输入无效（如原始价格或折扣率为 `null` 或非数字类型），则返回 `null`。
 
-#### Remarks
+#### Description
 
-支持多种折扣场景和边界处理，适用于电商、金融等需要高精度折扣计算的场景
+`公式：折扣价 = 原价 - (原价 * 折扣率)`;  根据给定的原始价格和折扣率计算折扣后的价格。该方法支持多种边界值、异常情况处理，并具备精度配置和缓存机制功能。
 
-#### Example
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.calculateDiscountedPrice(100, 0.2) // 80（100元打8折）
-CalcInst.calculateDiscountedPrice(50, 0.5) // 25（50元5折）
-
-// 特殊场景
-CalcInst.calculateDiscountedPrice(150, 0) // 150（0折不打折）
-CalcInst.calculateDiscountedPrice(-100, 0.2) // -100（负数原样返回）
-CalcInst.calculateDiscountedPrice(100, 1) // 0（满折场景）
+// 正常折扣计算
+const discountedPrice = CalcInst.calculateDiscountedPrice(100, 0.1);
+expect(discountedPrice).toBe(90);
 ```
 
-#### Performance
+```ts
+// 折扣率为0
+const noDiscountPrice = CalcInst.calculateDiscountedPrice(50, 0);
+expect(noDiscountPrice).toBe(50);
+```
 
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+```ts
+// 使用自定义精度配置
+const discountedPriceWithPrecision = CalcInst.calculateDiscountedPrice(100.111, 0.1, { outputDecimalPlaces: 2 });
+expect(discountedPriceWithPrecision).toBe(90.1);
+```
 
-#### Error Handling
+#### Throws
 
-自动处理以下异常情况：
-- originalPrice为null/NaN：返回null
-- discountRate为null/NaN：返回null
-- originalPrice为非数字类型：返回null
-- discountRate为非数字类型：返回null
-- discountRate为负数：返回originalPrice
-- originalPrice为负数：返回originalPrice
-
-#### Caching
-
-缓存键生成策略：
-- 基于originalPrice和discountRate生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('calculateDiscountedPrice')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+- 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
+UserOptions - 用于查看用户配置选项的详细类型定义。
 
-#### Test Cases
+#### Description
 
-```ts
-// 正常计算
-expect(CalcInst.calculateDiscountedPrice(100, 0.2)).toBe(80)
-expect(CalcInst.calculateDiscountedPrice(50, 0.5)).toBe(25)
-
-// 边界处理
-expect(CalcInst.calculateDiscountedPrice(null, 0.2)).toBeNull()
-expect(CalcInst.calculateDiscountedPrice(100, null)).toBeNull()
-expect(CalcInst.calculateDiscountedPrice(null, null)).toBeNull()
-
-// 异常值处理
-expect(CalcInst.calculateDiscountedPrice(-100, 0.2)).toBe(-100) // 负数处理
-expect(CalcInst.calculateDiscountedPrice(100, -0.2)).toBe(100) // 负折扣率处理
-
-// 精度继承
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-expect(CalcInst.calculateDiscountedPrice(99.99, 0.3333)).toBe(66.663) // 99.99*(1-0.3333)=66.6633 → 保留3位小数
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().calculateDiscountedPrice.size
-CalcInst.calculateDiscountedPrice(100, 0.2)
-expect(CalcInst.getCache().calculateDiscountedPrice.size).toBe(cacheSize + 1)
-```
+- 该方法对于有效输入，通过公式 `原始价格 * (1 - 折扣率)` 来计算折扣价格，并根据 `outputDecimalPlaces` 配置进行精度处理。
+ - 在边界值处理上：
+   - 折扣率为 0 时，返回原始价格；折扣率为 1 时，返回 0（免费）。
+   - 原始价格为 0 时，无论折扣率如何，返回 0。
+   - 处理极小数值和极大数值确保计算准确。
+ - 异常情况处理：
+   - 当原始价格或折扣率为 `null` 或非数字类型时，返回 `null`。
+   - 对于负原始价格和负折扣率，按特定规则返回原始价格。
+ - 缓存机制：
+   - 根据输入的原始价格、折扣率和配置选项生成唯一缓存键。
+   - 相同输入的计算结果会命中缓存，减少计算次数，提高性能。
 
 ***
 
@@ -321,7 +221,7 @@ expect(CalcInst.getCache().calculateDiscountedPrice.size).toBe(cacheSize + 1)
 
 > **calcUnitPrice**(`calcBaseTotalParams`, `userOptions?`): `CalcBaseTotalParams`
 
-基础公式: 单价 = 总价 / 数量
+根据公式计算单价
 
 #### Parameters
 
@@ -329,112 +229,74 @@ expect(CalcInst.getCache().calculateDiscountedPrice.size).toBe(cacheSize + 1)
 
 `Required`\<`Omit`\<`CalcBaseTotalParams`, `"unitPrice"`\>\>
 
-计算参数对象，必须包含以下字段：
-- quantity: 数量（可为null）
-- linePrice: 总价（可为null）
-- 注意：unitPrice字段会被忽略
+包含数量和总价信息的参数对象，但不包含单价。
+ - **quantity** ：数字类型，表示商品的数量。可以是 `null`，不同值会有不同的计算逻辑。
+ - **linePrice** ：数字类型，表示商品的总价。可以是 `null`，不同值会有不同的计算逻辑。
 
 ##### userOptions?
 
-`BaseOptions`
+`Partial`\<`UserOptions`\>
 
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（固定为8）
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
 #### Returns
 
 `CalcBaseTotalParams`
 
-包含完整计算结果的对象：
-- quantity: 原样返回输入值
-- unitPrice: 计算结果（可能为null）
-- linePrice: 原样返回输入值
+包含计算后的数量、单价和总价的对象。
 
-#### Remarks
+#### Description
 
-支持多种边界场景处理和高精度计算，适用于电商、金融等场景的单价计算需求
+`公式： 单价 = 总价 / 数量` 通过给定的数量（quantity）和总价（linePrice），按照一定规则计算出单价（unitPrice），并返回包含数量、单价和总价的对象。该方法考虑了多种边界条件、异常情况，支持用户自定义计算精度，同时具备缓存机制以提高性能。
 
-#### Example
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 }) // { quantity:4, unitPrice:5, linePrice:20 }
-
-// 浮点数计算
-CalcInst.calcUnitPrice({ quantity: 3, linePrice: 9.99 }) // { quantity:3, unitPrice:3.33, linePrice:9.99 }
-
-// 自定义精度
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10 }) // { quantity:3, unitPrice:3.333, linePrice:10 }
-
-// 边界处理
-CalcInst.calcUnitPrice({ quantity: null, linePrice: 50 }) // { quantity:null, unitPrice:50, linePrice:50 }
-CalcInst.calcUnitPrice({ quantity: 0, linePrice: 100 }) // { quantity:0, unitPrice:100, linePrice:100 }
+// 常规计算
+CalcInst.calcUnitPrice({ quantity: 5, linePrice: 25 }); // { quantity: 5, unitPrice: 5, linePrice: 25 }
 ```
 
-#### Performance
+```ts
+// quantity 为 null 的情况
+CalcInst.calcUnitPrice({ quantity: null, linePrice: 30 }); // { quantity: null, unitPrice: 30, linePrice: 30 }
+```
 
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+```ts
+// quantity 为 0 的情况
+CalcInst.calcUnitPrice({ quantity: 0, linePrice: 40 }); // { quantity: 0, unitPrice: 40, linePrice: 40 }
+```
 
-#### Error Handling
+```ts
+// 使用自定义配置选项
+CalcInst.calcUnitPrice({ quantity: 4, linePrice: 18 }, { outputDecimalPlaces: 1 }); // { quantity: 4, unitPrice: 4.5, linePrice: 18 }
+```
 
-自动处理以下异常情况：
-- quantity和linePrice同时为null：返回全null对象
-- quantity为0时：强制unitPrice等于linePrice
-- quantity为null时：unitPrice等于linePrice
-- 非数字值传入：通过类型校验确保不会出现
+#### Throws
 
-#### Caching
-
-缓存键生成策略：
-- 基于calcBaseTotalParams和userOptions生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('calcUnitPrice')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
- - CalcBaseTotalParams - 参数类型定义
+ - UserOptions 用于查看用户配置选项的详细类型定义。
+ - CalcBaseTotalParams 用于查看参数对象的详细类型定义。
 
-#### Test Cases
+#### Description
 
-```ts
-// 正常计算
-expect(CalcInst.calcUnitPrice({ quantity: 4, linePrice: 20 })).toEqual({
-  quantity: 4, unitPrice: 5, linePrice: 20
-})
-
-// quantity为null的场景
-expect(CalcInst.calcUnitPrice({ quantity: null, linePrice: 50 })).toEqual({
-  quantity: null, unitPrice: 50, linePrice: 50
-})
-
-// quantity为0的场景
-expect(CalcInst.calcUnitPrice({ quantity: 0, linePrice: 100 })).toEqual({
-  quantity: 0, unitPrice: 100, linePrice: 100
-})
-
-// 高精度场景
-expect(CalcInst.calcUnitPrice({ quantity: 3, linePrice: 10.0005 }, { precision: 3 })).toEqual({
-  quantity: 3, unitPrice: 3.334, linePrice: 10.001
-})
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().calcUnitPrice.size
-CalcInst.calcUnitPrice({ quantity: 5, linePrice: 25 })
-expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
-```
+- 该方法会根据不同的边界条件进行不同的处理：
+   - 当 `quantity` 和 `linePrice` 同时为 `null` 时，返回全 `null` 对象。
+   - 当 `quantity` 为 `null` 时，`unitPrice` 等于 `linePrice`。
+   - 当 `linePrice` 为 `null` 时，返回 `null` 总价。
+   - 当 `quantity` 为 `0` 时，强制 `unitPrice` 等于 `linePrice`。
+ - 对于单价的计算，会使用 `Decimal.js` 进行高精度计算，以确保计算结果的准确性。
+ - 方法具备缓存机制，会根据输入数据（参数对象、配置选项）生成唯一的缓存键，相同输入的计算结果将直接从缓存中获取，避免重复计算，提高计算效率。
 
 ***
 
@@ -458,248 +320,202 @@ expect(CalcInst.getCache().calcUnitPrice.size).toBe(cacheSize + 1)
 
 ### computeRate()
 
-> **computeRate**(`originPrice`, `userRate?`, `userRateType?`, `userOptions?`): `number`
+根据给定的价格、税率和税率计算类型，计算相应的税额
 
-计算税率相关的金额
+#### Description
 
-#### Parameters
+此方法支持多种精度配置、参数组合设定，并能处理各种边界值和异常输入情况，同时具备缓存机制以提高计算效率。
 
-##### originPrice
+#### Param
 
-`number`
+商品的原始价格。可以是数字类型，也可能接受其他类型输入，但对于非数字等无效输入有相应处理方式。当输入为 `NaN`、非数字类型（如字符串）时，会按照特定规则返回结果（如 `NaN` 价格返回 0，非数字价格返回 0）。
 
-原始价格，支持以下处理：
-- null/0：直接返回0
-- 非数字类型：强制转为0
-- 正常数值：如 100 元
+#### Param
 
-##### userRate?
+税率相关参数。可以是单纯的税率数字，也可以是包含多个配置项的对象。如果传入对象，可包含 `taxRate`（税率）、`outputDecimalPlaces`（输出小数位数）、`rateType`（税率计算类型）等配置项。若传入非数字类型，对于价格计算会当做无效税率处理（此时按特定规则处理）。
 
-`number`
+#### Param
 
-税率值（0-1之间的小数），支持以下处理：
-- null/undefined：使用全局taxRate配置
-- NaN：返回原始价格
-- 负值：强制转为0
-- 默认值：0.1（对应默认配置）
+税率计算类型（可选）。取值为 `'EXCL'`（不含税）、`'INCL'`（含税）、`'FREE'`（免税）之一。用于指定计算税额的方式，默认为全局配置中的 `rateType`，若全局未设置则使用默认类型 `'INCL'`。若同时存在方法级和全局的 `rateType` 配置，方法级配置优先。
 
-##### userRateType?
-
-`RateType`
-
-税率类型，支持以下类型：
-- 'gst_free'：免税场景返回0
-- 'excl_gst'：不含税计算（直接乘税率）
-- 'incl_gst'：含税计算（先加1再乘税率）
-- 默认值：'incl_gst'
-
-##### userOptions?
-
-`BaseOptions`
-
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（固定为8）
-
-#### Returns
-
-`number`
-
-折扣后的价格，如果输入不合法返回 null
-
-#### Remarks
-
-支持多种税率模式和边界场景处理，适用于电商、金融等需要含税/不含税计算的场景
-
-#### Example
+#### Examples
 
 ```ts
-// 基础用法（含税计算）
-CalcInst.computeRate(10, 0.1) // 0.91（10/(1+0.1)*0.1）
-// 不含税计算
-CalcInst.computeRate(25, 0.1, 'excl_gst') // 2.5（25*0.1）
-// 免税场景
-CalcInst.computeRate(100, 0.1, 'gst_free') // 0
-// 使用全局配置
-CalcInst.computeRate(100) // 根据全局taxRate和rateType计算
+// 含税计算示例
+const taxAmount1 = CalcInst.computeRate(100, { taxRate: 0.1, outputDecimalPlaces: 2 });
+expect(taxAmount1).toBe(9.09);
 ```
 
-#### Performance
+```ts
+// 不含税计算示例
+const taxAmount2 = CalcInst.computeRate(200, 0.15, 'EXCL');
+expect(taxAmount2).toBe(30);
+```
 
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+```ts
+// 免税场景示例
+const taxAmount3 = CalcInst.computeRate(150, 0.2, 'FREE');
+expect(taxAmount3).toBe(0);
+```
 
-#### Error Handling
+#### Description
 
-自动处理以下异常情况：
-- originPrice为null/0：返回0
-- userRate为NaN：使用全局taxRate配置
-- userRate超出[0,1]范围：使用全局taxRate配置
-- userRateType无效：使用全局rateType配置
-
-#### Caching
-
-缓存键生成策略：
-- 基于originPrice、userRate和userRateType生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('computeRate')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+- 计算逻辑：
+   - 根据 `rateType` 的值确定计算方式。`'EXCL'` 类型下，税额 = 原始价格 * 税率；`'INCL'` 类型下，税额 = 原始价格 / (1 + 税率) * 税率。`'FREE'` 类型下，无论价格和税率是多少，税额直接返回 0 且此类型优先级最高，会强制覆盖非零税率配置。
+ - 精度配置：
+   - 支持两种精度控制方式。当 `keepResultPrecision` 为 `true` 时，保留原始计算精度；当 `keepResultPrecision` 为 `false` 时，结果会根据 `outputDecimalPlaces` 的值进行四舍五入。若方法级设置了 `outputDecimalPlaces`，则会覆盖全局配置的 `outputDecimalPlaces`。
+ - 边界值处理：
+   - 处理 0 价格情况，无论税率如何，税额返回 0。
+   - 处理负数价格，按正常计算逻辑得出负数税额（但在 `FREE` 类型下负数价格返回 0）。
+   - 能处理超大数值的税率计算，并按要求的精度配置（如 `outputDecimalPlaces`）输出结果。
+ - 异常输入处理：
+   - 对于价格输入为 `NaN` 或非数字类型，以及税率输入为非数字类型的情况，都会按照特定规则进行处理并返回相应结果。
+ - 缓存机制：
+   - 根据输入的 `originPrice`、`userRate` 和 `rateType` 参数生成唯一的缓存键。相同输入情况下，会命中缓存，直接返回缓存中的结果，避免重复计算，提高性能。不同参数组合会生成不同的缓存键，确保不同计算情况的结果独立性。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
+[全局配置相关参数] - 方法会参考全局配置的 `taxRate`、`outputDecimalPlaces`、`rateType`、`keepResultPrecision` 等参数，当方法级未提供某些配置时，会使用全局配置值进行计算，同时方法级配置优先于全局配置。
 
-#### Test Cases
+#### Call Signature
 
-```ts
-// 正常含税计算
-expect(CalcInst.computeRate(10, 0.1)).toBe(0.91)
-// 不含税计算
-expect(CalcInst.computeRate(25, 0.1, 'excl_gst')).toBe(2.5)
-// 分母为0场景
-expect(CalcInst.computeRate(10, 0)).toBe(0)
-// 负数处理
-expect(CalcInst.computeRate(-10, 50)).toBe(-10)
-// 无效参数处理
-expect(CalcInst.computeRate(10, 'invalid' as any)).toBe(10)
-// 使用全局配置
-expect(CalcInst.computeRate(100)).toBe(10) // 假设全局taxRate=0.1, rateType='excl_gst'
-// 缓存验证
-const cacheSize = CalcInst.getCache().computeRate.size
-CalcInst.computeRate(10, 0.6)
-expect(CalcInst.getCache().computeRate.size).toBe(cacheSize + 1)
-```
+> **computeRate**(`originPrice`): `number`
+
+##### Parameters
+
+###### originPrice
+
+`number`
+
+##### Returns
+
+`number`
+
+#### Call Signature
+
+> **computeRate**(`originPrice`, `userRate`): `number`
+
+##### Parameters
+
+###### originPrice
+
+`number`
+
+###### userRate
+
+`number`
+
+##### Returns
+
+`number`
+
+#### Call Signature
+
+> **computeRate**(`originPrice`, `userOptions`): `number`
+
+##### Parameters
+
+###### originPrice
+
+`number`
+
+###### userOptions
+
+`Partial`\<`UserOptions`\>
+
+##### Returns
+
+`number`
+
+#### Call Signature
+
+> **computeRate**(`originPrice`, `userRate`, `userRateType`): `number`
+
+##### Parameters
+
+###### originPrice
+
+`number`
+
+###### userRate
+
+`number`
+
+###### userRateType
+
+`RateType`
+
+##### Returns
+
+`number`
 
 ***
 
 ### decimalToPercent()
 
-> **decimalToPercent**(`originDecimal`, `decimalPlaces`): `number`
+> **decimalToPercent**(`originNumber`, `userOptions?`): `number`
 
-将小数转换为百分比
+将小数值转换为百分比值
 
 #### Parameters
 
-##### originDecimal
+##### originNumber
 
-小数值，支持以下处理：
-- null/NaN：自动转为0
-- 零值：直接返回0
-- 非数字类型：强制转为0
-- 正常数值：如 0.5 → 50
+需要转换的小数值。可以为 `null`、布尔值、字符串、`undefined` 或 `NaN` 等无效值，这些无效值都将被处理并返回指定的默认结果。
 
 `null` | `number`
 
-##### decimalPlaces
+##### userOptions?
 
-`number` = `2`
-
-控制小数位数（0-8），支持以下处理：
-- null/undefined：使用全局precision配置
-- 负值：强制转为0
-- 超过8的值：强制转为8
-- 默认值：2位小数
+`number` | `Partial`\<`UserOptions`\>
 
 #### Returns
 
 `number`
 
-转换后的百分比数值（可能为0）
-- 成功转换返回number
-- 非法输入返回0
+- 返回转换后的百分比值。对于无效输入，或转换结果小于0.000001 时，可能返回特定的默认值。
 
-#### Remarks
+#### Description
 
-支持多种精度配置和边界场景处理，适用于金融、电商等场景的百分比计算需求
+`公式: 百分比 = 原始值 * 100;` 支持对转换结果进行精度控制. 此方法能处理多种输入情况，包括边界值、异常值，同时具备缓存机制以提高性能。
 
-#### Example
+#### Description
+
+注：% 号没有加，可以用另一个 Formatter 继续处理
+
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.decimalToPercent(0.5) // 50
-CalcInst.decimalToPercent(0.25) // 25
-
-// 自定义精度
-CalcInst.decimalToPercent(0.333333, 3) // 33.333
-CalcInst.decimalToPercent(0.88888888, 3) // 88.889
-
-// 边界处理
-CalcInst.decimalToPercent(null) // 0
-CalcInst.decimalToPercent(NaN) // 0
-CalcInst.decimalToPercent('abc' as any) // 0
-CalcInst.decimalToPercent(-0.5) // -50
+// 正常小数转换
+const percentValue = CalcInst.decimalToPercent(0.2);
+expect(percentValue).toBe(20);
 ```
 
-#### Performance
+```ts
+// 自定义小数位数
+const customPercentValue = CalcInst.decimalToPercent(0.33333, 3);
+expect(customPercentValue).toBe(33.333);
+```
 
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+#### Description
 
-#### Error Handling
-
-自动处理以下异常情况：
-- originDecimal为null/NaN：返回0
-- originDecimal为非数字类型：返回0
-- decimalPlaces为负数：转为0处理
-- decimalPlaces超过8：转为8处理
-- decimalPlaces为NaN：使用默认值2
-
-#### Caching
-
-缓存键生成策略：
-- 基于originDecimal和decimalPlaces生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('decimalToPercent')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级decimalPlaces配置
-2. 未指定时使用全局precision配置
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+- 正常转换逻辑：将输入的小数值乘以 100 并根据 `decimalPlaces` 参数进行精度处理后返回作为百分比的值。例如，0.5 转换为 50。
+ - 边界值处理：
+   - 输入为 `null`、`0`、`NaN` 时，返回 0。
+   - 输入为科学计数法表示的极小值，如 1e - 5，能正确转换为对应的百分比 0.001。
+ - 异常值处理：
+   - 非数字类型输入如字符串、布尔值、`undefined` 等，均返回 0。
+   - 负数输入正确转换为对应的负百分比，如 - 0.5 转换为 - 50。
+ - 精度控制：
+   - 根据 `decimalPlaces` 参数确定转换后的百分比值要保留的小数位数。如果该参数不合法（小于 0 或者非数字类型），则采用全局配置 `outputDecimalPlaces` 的值进行处理。
+   - 对极小值如 0.00000001 能按照期望保留精度。对多位小数输入如 0.123456789 能根据指定的 `decimalPlaces` 正确保留小数位数。
+ - 缓存机制：
+   - 该方法会根据输入的 `originNumber` 和 `decimalPlaces` 参数生成唯一的缓存键。相同输入情况下，会命中缓存，直接返回缓存中的结果，提高计算效率。
+   - 不同配置（不同的 `decimalPlaces` 值）会生成不同的缓存键，以确保不同配置下的结果独立性。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
-
-#### Test Cases
-
-```ts
-// 正常转换
-expect(CalcInst.decimalToPercent(0.5)).toBe(50)
-expect(CalcInst.decimalToPercent(1)).toBe(100)
-
-// 精度控制
-expect(CalcInst.decimalToPercent(0.333333, 3)).toBe(33.333)
-expect(CalcInst.decimalToPercent(0.66666666, 4)).toBe(66.6667)
-
-// 边界处理
-expect(CalcInst.decimalToPercent(null)).toBe(0)
-expect(CalcInst.decimalToPercent(0)).toBe(0)
-expect(CalcInst.decimalToPercent('not a number' as any)).toBe(0)
-
-// 负数处理
-expect(CalcInst.decimalToPercent(-0.5)).toBe(-50)
-
-// 精度继承
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-expect(CalcInst.decimalToPercent(0.66666666)).toBe(66.6667)
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().decimalToPercent.size
-CalcInst.decimalToPercent(0.555555, 3)
-expect(CalcInst.getCache().decimalToPercent.size).toBe(cacheSize + 1)
-```
+全局配置. 当 `decimalPlaces` 参数不符合要求时，会使用全局配置的 `outputDecimalPlaces` 进行处理。
 
 ***
 
@@ -731,43 +547,13 @@ expect(CalcInst.getCache().decimalToPercent.size).toBe(cacheSize + 1)
 
 > **getCache**(): `CacheStore`
 
-获取缓存实例或特定类型的缓存
-
 ##### Returns
 
 `CacheStore`
 
-缓存对象或指定类型的Map实例
-
-##### Remarks
-
-支持三种调用方式：
-1. 无参数时返回完整缓存存储对象
-2. 传入有效缓存类型时返回对应Map实例
-3. 传入无效类型时返回完整缓存并发出警告
-
-##### Examples
-
-```ts
-// 获取完整缓存
-const fullCache = CalcInst.getCache();
-```
-
-```ts
-// 获取求和缓存
-const sumCache = CalcInst.getCache('sum');
-```
-
-```ts
-// 获取无效类型会触发警告
-const invalidCache = CalcInst.getCache('invalidType'); // 控制台警告：Invalid cacheType: invalidType
-```
-
 #### Call Signature
 
 > **getCache**(`cacheType`): `Map`\<`string`, `unknown`\>
-
-获取缓存实例或特定类型的缓存
 
 ##### Parameters
 
@@ -775,166 +561,106 @@ const invalidCache = CalcInst.getCache('invalidType'); // 控制台警告：Inva
 
 keyof `CacheStore`
 
-可选缓存类型，支持以下类型：
-'sum' | 'subtractMultiple' | 'calcUnitPrice' | 'calcLinePrice' |
-'percentToDecimal' | 'decimalToPercent' | 'calculateDiscountedPrice' | 'computeRate'
-
 ##### Returns
 
 `Map`\<`string`, `unknown`\>
 
-缓存对象或指定类型的Map实例
-
-##### Remarks
-
-支持三种调用方式：
-1. 无参数时返回完整缓存存储对象
-2. 传入有效缓存类型时返回对应Map实例
-3. 传入无效类型时返回完整缓存并发出警告
-
-##### Examples
-
-```ts
-// 获取完整缓存
-const fullCache = CalcInst.getCache();
-```
-
-```ts
-// 获取求和缓存
-const sumCache = CalcInst.getCache('sum');
-```
-
-```ts
-// 获取无效类型会触发警告
-const invalidCache = CalcInst.getCache('invalidType'); // 控制台警告：Invalid cacheType: invalidType
-```
-
 ***
 
-### getOptions()
+### getThisDataMaxPrecision()
 
-> **getOptions**(): `BaseOptions`
+> **getThisDataMaxPrecision**(`dataStructure`): `number`
+
+处理保留参数最大精度逻辑
+
+#### Parameters
+
+##### dataStructure
+
+`unknown`
+
+输入的数据结构，可以是数组、对象、数字或其他未知类型
 
 #### Returns
 
-`BaseOptions`
+`number`
+
+- 返回数据结构中数字的最大小数位数，如果没有小数则返回默认值
 
 ***
 
 ### percentToDecimal()
 
-> **percentToDecimal**(`originPercentage`, `decimalPlaces?`): `null` \| `number`
+> **percentToDecimal**(`originPercentage`, `userOptions?`): `null` \| `number`
 
-将百分比数值转换为小数
+将百分比值转换为小数值
 
 #### Parameters
 
 ##### originPercentage
 
-百分比数值，支持以下处理：
-- null/NaN：自动转为null
-- 非数字类型：强制转为null
-- 正常数值：如 50.56 → 0.5056
-
 `null` | `number`
 
-##### decimalPlaces?
+##### userOptions?
 
-`number`
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于控制转换后的小数精度。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
-控制小数位数（0-8），支持以下处理：
-- null/undefined：使用全局precision配置
-- 负值：强制转为0
-- 超过8的值：强制转为8
-- 默认值：2位小数
+`number` | `Partial`\<`UserOptions`\>
 
 #### Returns
 
 `null` \| `number`
 
-转换后的小数值（可能为null）
-- 成功转换返回number
-- 非法输入返回null
+- 返回转换后的小数值。如果输入无效（如 `null`、非数字类型或 `NaN`），则返回 `null`。
 
-#### Remarks
+#### Description
 
-支持多种精度配置和边界场景处理，适用于金融、电商等场景的百分比计算需求
+`公式: 小数 = 原始值(%) / 100;`  该方法支持自定义精度配置，能处理多种边界值情况和异常输入，并具备缓存机制以提高计算效率。
 
-#### Example
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.percentToDecimal(50.56) // 0.5056（默认保留2位小数）
-CalcInst.percentToDecimal(100) // 1
-
-// 自定义精度
-CalcInst.percentToDecimal(50.56789, 4) // 0.5057（四舍五入）
-CalcInst.percentToDecimal(0.999999999, 3) // 100.000（保留3位小数）
-
-// 边界处理
-CalcInst.percentToDecimal(null) // null
-CalcInst.percentToDecimal(NaN) // null
-CalcInst.percentToDecimal('abc' as any) // null
+// 正常百分比转换
+const decimalValue = CalcInst.percentToDecimal(20);
+expect(decimalValue).toBe(0.2);
 ```
 
-#### Performance
+```ts
+// 使用自定义精度配置
+const decimalValueWithPrecision = CalcInst.percentToDecimal(33.333, { outputDecimalPlaces: 2 });
+expect(decimalValueWithPrecision).toBe(0.33);
+```
 
-时间复杂度：O(1) 常量时间复杂度（无循环）
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+#### Throws
 
-#### Error Handling
-
-自动处理以下异常情况：
-- originPercentage为null/NaN：返回null
-- originPercentage为非数字类型：返回null
-- decimalPlaces为负数：转为0处理（保留2位小数）
-- decimalPlaces超过8：转为8处理
-- decimalPlaces为NaN：使用默认值2
-
-#### Caching
-
-缓存键生成策略：
-- 基于originPercentage和decimalPlaces生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('percentToDecimal')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级decimalPlaces配置
-2. 未指定decimalPlaces时使用全局precision配置
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 最终小数位数 = decimalPlaces + 2（当未指定decimalPlaces时）
+- 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
+UserOptions - 用于查看用户配置选项的详细类型定义。
 
-#### Test Cases
+#### Description
 
-```ts
-// 正常转换
-expect(CalcInst.percentToDecimal(50.56)).toBe(0.5056)
-expect(CalcInst.percentToDecimal(100)).toBe(1)
-
-// 精度控制
-expect(CalcInst.percentToDecimal(50.56789, 4)).toBe(0.5057)
-expect(CalcInst.percentToDecimal(50.567899, 4)).toBe(0.5057)
-
-// 边界处理
-expect(CalcInst.percentToDecimal(null)).toBeNull()
-expect(CalcInst.percentToDecimal(123.4567, -1)).toBe(123.4567) // 无效decimalPlaces处理
-
-// 精度继承
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-expect(CalcInst.percentToDecimal(50.56789)).toBe(0.50568) // 0.5056789 → 0.50568
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().percentToDecimal.size
-CalcInst.percentToDecimal(50.56789, 4)
-expect(CalcInst.getCache().percentToDecimal.size).toBe(cacheSize + 1)
-```
+- 对于有效的百分比输入，通过将百分比值除以 100 来进行转换。例如，50% 转换为 0.5，100% 转换为 1。
+ - 精度配置方面：
+   - 根据 `outputDecimalPlaces` 的值对转换结果进行四舍五入处理。例如，`outputDecimalPlaces` 为 2 时，33.333 将转换为 0.33。
+   - 当 `outputDecimalPlaces` 为 `-1` 时，返回原始计算值，不进行四舍五入。
+ - 边界值处理：
+   - 处理极大值和极小值，确保正确转换。例如，999999999 转换为 9999999.99，0.0001 转换为 0.000001。
+   - 对于负百分比，同样进行正确转换。例如，-100 转换为 -1，-50 转换为 -0.5。
+ - 异常输入处理：
+   - 当输入为 `null`、非数字类型（如字符串）或 `NaN` 时，返回 `null`。
+ - 缓存机制：
+   - 该方法会根据输入的百分比值和配置选项生成唯一的缓存键。
+   - 相同输入的转换结果会命中缓存，减少重复计算，提高性能。
 
 ***
 
@@ -942,34 +668,15 @@ expect(CalcInst.getCache().percentToDecimal.size).toBe(cacheSize + 1)
 
 > **queryCacheStat**(`cacheType`): `object`
 
-查询缓存统计信息
-
 #### Parameters
 
 ##### cacheType
 
 `CacheType` = `'all'`
 
-可选参数，指定要查询的缓存类型。默认值为 'all' 查询所有类型
-                 有效值：'all'|'sum'|'subtractMultiple'|'calcUnitPrice'|'calcLinePrice'|
-                         'percentToDecimal'|'decimalToPercent'|'calculateDiscountedPrice'|'computeRate'
-
 #### Returns
 
 `object`
-
-返回包含缓存统计信息的对象，结构为：
-         {
-           all: number, // 所有缓存的总条目数
-           [cacheType]: number, // 每个指定类型的缓存条目数
-         }
-         示例返回结构：
-         {
-           all: 2,
-           sum: 1,
-           percentToDecimal: 1,
-           // 其他缓存类型字段...
-         }
 
 ##### all
 
@@ -1007,106 +714,41 @@ expect(CalcInst.getCache().percentToDecimal.size).toBe(cacheSize + 1)
 
 > **sum**: `number`
 
-#### Remarks
-
-支持按缓存类型查询或返回所有缓存的统计信息，适用于性能监控和调试场景
-
-#### Example
-
-```ts
-// 查询所有缓存统计
-CalcInst.queryCacheStat()
-// 返回: { all: 2, sum: 1, percentToDecimal: 1, ... }
-
-// 查询指定缓存类型
-CalcInst.queryCacheStat('sum')
-// 返回: { all: 1, sum: 1 }
-```
-
-#### Performance
-
-时间复杂度：O(n) 其中n为查询的缓存类型数量
-内部遍历指定的缓存类型列表进行统计
-
-#### Error Handling
-
-对无效的cacheType参数会自动忽略，不会抛出错误
-例如传入'invalidType'时，结果中只会包含有效类型统计
-
-#### See
-
- - CacheType - 缓存类型枚举定义
- - CacheStore - 缓存存储结构定义
-
 ***
 
-### setOption()
+### resetInstance()
 
-> **setOption**(`option`, `value`): `void`
-
-动态设置计算器核心配置项
-
-#### Parameters
-
-##### option
-
-配置项名称，可选值：
-- 'precision'：调整计算精度（0-8位小数）
-- 'taxRate'：设置税率（0-1之间的小数）
-- 'rateType'：指定税率类型（'gst_free'|'incl_gst'|'excl_gst'）
-
-`"precision"` | `"taxRate"` | `"rateType"`
-
-##### value
-
-`unknown`
-
-配置项值，根据option类型不同：
-- precision: 必须是 0~8 的数字
-- taxRate: 必须是 0~1 的数字
-- rateType: 必须是有效税率类型
+> **resetInstance**(): `void`
 
 #### Returns
 
 `void`
 
-#### Description
+***
 
-用于调整运行时计算参数，支持链式调用
+### setUserOption()
 
-#### Examples
+> **setUserOption**\<`K`\>(`option`, `value`): `void`
 
-```ts
-CalcInst.setUserOption('outputDecimalPlaces', 3) // 设置计算精度为3位小数
-CalcInst.setUserOption('outputDecimalPlaces', 0) // 禁用小数计算
-```
+#### Type Parameters
 
-```ts
-CalcInst.setUserOption('taxRate', 0.15) // 设置15%税率
-CalcInst.setUserOption('taxRate', 0) // 免税场景
-```
+##### K
 
-```ts
-CalcInst.setUserOption('rateType', 'gst_free') // 税种无关计算
-CalcInst.setUserOption('rateType', 'excl_gst') // 含税计算模式
-```
+`K` *extends* keyof `UserOptions`
 
-#### Throws
+#### Parameters
 
-当传入无效配置项时抛出错误
-- 无效配置项名：`Invalid option: ${option}`
-- 精度超出范围：`Precision must be a number between 0 and 8`
-- 税率超出范围：`Tax rate must be a number between 0 and 1`
-- 无效税率类型：`Invalid RateType`
+##### option
 
-#### Remarks
+`K`
 
-该方法支持链式调用，典型用法：
-```ts
-CalcInst
-  .setOption('precision', 3)
-  .setOption('taxRate', 0.1)
-```
+##### value
+
+`UserOptions`\[`K`\]
+
+#### Returns
+
+`void`
 
 ***
 
@@ -1114,7 +756,7 @@ CalcInst
 
 > **subtractMultiple**(`initialValue`, `subtractValues`, `userOptions?`): `number`
 
-从初始值中减去多个值
+从初始值中依次减去多个减数，实现多次减法运算。
 
 #### Parameters
 
@@ -1122,115 +764,68 @@ CalcInst
 
 `number`
 
-初始值（被减数），支持以下处理：
-- null/NaN：自动转为0继续计算
-- 非数字类型：强制转为0（如字符串'abc'、布尔值等）
+初始值，作为减法运算的起始值。如果该值不是数字类型（包括 `null`、`NaN`、`undefined` 等），将会被转换为 `0` 后进行运算。
 
 ##### subtractValues
 
-减数列表，支持以下格式：
-- 单个数字：`8.88`（自动转为数组）
-- 数值数组：`[1, 2, 3]`
-- 混合类型数组（过滤非法值）：`[5, '10', true]`
+减数，可以是单个数字或数字数组。如果是单个数字，会将其转换为包含该数字的数组进行处理。数组中的无效值（如非数字类型）将被过滤掉，不参与运算。
 
 `number` | `number`[]
 
 ##### userOptions?
 
-`Partial`\<`BaseOptions`\>
+`Partial`\<`UserOptions`\>
 
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（预设为8位）
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
 #### Returns
 
 `number`
 
-减法运算结果：
-- 初始值非法时返回0（如'abc'、NaN等）
-- 减数列表为空时返回初始值
-- 非数字减数自动过滤
-- 默认保留2位小数（可通过setOption修改全局配置）
+减法运算的结果，类型为基础数字类型。
 
-#### Remarks
+#### Description
 
-支持链式减法运算和缓存优化，适用于金融场景的金额计算
+该方法支持多种类型的参数输入，并对异常输入和边界情况进行了处理，同时支持用户自定义计算精度，还具备缓存机制以提高性能。
 
-#### Example
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.subtractMultiple(9.99, [8.88]) // 1.11
-CalcInst.subtractMultiple(15, [1,2,3,4]) // 5
-
-// 处理非数字减数
-CalcInst.subtractMultiple(20, [5, '10', true]) // 15（过滤非法值）
-CalcInst.subtractMultiple(30, [10, null]) // 20
-
-// 精度控制
-CalcInst.setUserOption('outputDecimalPlaces', 3)
-CalcInst.subtractMultiple(10, [3.333]) // 6.667
-CalcInst.subtractMultiple(5, [1.111, 1.111]) // 2.778
-
-// 边界值处理
-CalcInst.subtractMultiple(null, [5]) // -5（初始值非法转为0-5）
-CalcInst.subtractMultiple(0, [0.0005]) // -0.001（保留3位小数时四舍五入）
+// 初始值减去单个减数
+CalcInst.subtractMultiple(10, 5); // 5
 ```
 
-#### Performance
+```ts
+// 初始值减去多个减数
+CalcInst.subtractMultiple(20, [5, 3, 2]); // 10
+```
 
-时间复杂度：O(n) 其中n为有效减数个数
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+```ts
+// 使用自定义配置选项
+CalcInst.subtractMultiple(10.5, [3.2], { outputDecimalPlaces: 1 }); // 7.3
+```
 
-#### Error Handling
+#### Throws
 
-自动处理以下异常情况：
-- 初始值为null/NaN：转为0继续计算
-- 减数列表包含非法值：自动过滤
-- 空数组作为减数：返回初始值
-- 非数字减数处理：转为0（如字符串'abc'）
-
-#### Caching
-
-缓存键生成策略：
-- 基于initialValue和subtractValues生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('subtractMultiple')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
+UserOptions 用于查看用户配置选项的详细类型定义。
 
-#### Test Cases
+#### Description
 
-```ts
-// 基本减法
-expect(CalcInst.subtractMultiple(9.99, [8.88])).toBe(1.11)
-
-// 空减数数组
-expect(CalcInst.subtractMultiple(50, [])).toBe(50)
-
-// 非数字值过滤
-expect(CalcInst.subtractMultiple(20, [5, '10', true])).toBe(15)
-
-// 零值处理
-expect(CalcInst.subtractMultiple(0, [5])).toBe(-5)
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().subtractMultiple.size
-CalcInst.subtractMultiple(100, [10, 20, 30])
-expect(CalcInst.getCache().subtractMultiple.size).toBe(cacheSize + 1)
-```
+- 该方法会先对初始值和减数进行预处理，将无效的初始值转换为 `0`，将单个减数转换为数组形式，并过滤掉减数数组中的无效值。
+ - 对于减法运算，会使用 `Decimal.js` 进行高精度计算，以确保计算结果的准确性。
+ - 方法具备缓存机制，会根据输入数据（初始值、减数、配置选项）生成唯一的缓存键，相同输入的计算结果将直接从缓存中获取，避免重复计算，提高计算效率。
 
 ***
 
@@ -1238,117 +833,79 @@ expect(CalcInst.getCache().subtractMultiple.size).toBe(cacheSize + 1)
 
 > **sum**(`data`, `userOptions?`): `number`
 
-价格加总计算方法
+计算输入数据的总和
 
 #### Parameters
 
 ##### data
 
-待求和的数据源，支持以下格式：
-- 数值数组：`[1, 2, 3]`
-- 键值对象：`{ a: 1, b: 2, c: 3 }`
-- 混合类型数组（会自动过滤非法值）：`[1, '2' as any, true, 3]`
+输入的数据，可以是单个数字、数字数组或包含数值属性的对象。
 
-`number`[] | \{\[`key`: `string`\]: `number`; \}
+ - **单个数字**：如 `5`，将直接计算该数字作为总和。
+ - **数字数组**：例如 `[1, 2, 3]`，方法将计算数组中所有有效数字的总和。
+ - **包含数值属性的对象**：例如 `{ a: 1, b: 2 }`，方法将计算对象中所有数值属性的总和。
+
+`number` | `number`[] | \{\[`key`: `string`\]: `number`; \}
 
 ##### userOptions?
 
-`Partial`\<`BaseOptions`\>
+`Partial`\<`UserOptions`\>
 
-可选参数，用于配置计算行为：
-- 最终结果保留的小数位数（0-8）
-- 运行时计算精度（不可修改，预设为8）
+用户自定义的配置选项（可选）。
+ - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
+ - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+ - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
+ - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
 
 #### Returns
 
 `number`
 
-计算后的总和：
-- 数组元素为null/NaN时自动忽略
-- 对象值为null/NaN时自动忽略
-- 所有元素非法时返回0
-- 默认保留2位小数（可通过setOption修改全局配置）
+计算结果，类型为基础数字类型。
 
-#### Remarks
+#### Description
 
-支持数组和对象类型的数值聚合，提供高精度计算和缓存优化机制，适用于金融、电商等场景的金额汇总需求
+该方法可以处理多种类型的数据输入，包括数字、数字数组以及包含数值的对象，并根据用户配置的精度选项进行计算结果的处理。同时，该方法具备缓存机制，相同输入的计算结果将被缓存以提高性能。
 
-#### Example
+#### Examples
 
 ```ts
-// 基础用法
-CalcInst.sum([1, 2, 3]) // 6
-CalcInst.sum([10, -5, 3.5]) // 8.5
-
-// 对象求和
-CalcInst.sum({ a: 1, b: 2, c: 3 }) // 6
-CalcInst.sum({ x: 10, y: null as any, z: 5 }) // 15
-
-// 精度控制
-CalcInst.sum([1.1111, 2.2222, 3.3333], { precision: 3 }) // 6.667
-CalcInst.sum([1.11555, 2.22255]) // 3.338（保留3位小数时四舍五入）
-
-// 边界值处理
-CalcInst.sum([null, undefined, 5, 'abc' as any]) // 5
-CalcInst.sum([0.0005, 0.0005]) // 0.001
+// 数组求和
+CalcInst.sum([1, 2, 3]); // 6
 ```
 
-#### Performance
+```ts
+// 单个数字输入
+CalcInst.sum(5); // 5
+```
 
-时间复杂度：O(n) 其中n为有效数值个数
-内部采用currency.js进行高精度计算，缓存机制避免重复计算
+```ts
+// 对象求和
+CalcInst.sum({ a: 1, b: 2 }); // 3
+```
 
-#### Error Handling
+```ts
+// 使用自定义配置选项
+CalcInst.sum([1.1, 2.2, 3.3], { outputDecimalPlaces: 1 }); // 6.6
+```
 
-自动处理以下异常情况：
-- 空数组输入：返回0
-- 数组元素全为null/NaN：返回0
-- 对象值全为null/NaN：返回0
-- 非数字类型自动过滤：'123'、true、null等非法值
+#### Throws
 
-#### Caching
-
-缓存键生成策略：
-- 基于数据内容和mergedOptions生成唯一键
-- 相同输入保证缓存命中
-- 缓存清理：`CalcInst.clearCache('sum')`
-
-#### Precision
-
-精度处理规则：
-1. 先应用方法级precision配置
-2. 无方法级配置时使用全局precision
-3. 运行时计算始终使用8位精度（runtimePrecision）
-4. 结果输出时根据precision配置四舍五入
+当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
+ - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
+ - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+ - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
+ - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
 
 #### See
 
- - CacheStore - 缓存存储结构定义
- - BaseOptions - 配置项类型定义
+UserOptions 用于查看用户配置选项的详细类型定义。
 
-#### Test Cases
+#### Description
 
-```ts
-// 数值数组计算
-expect(CalcInst.sum([1, 2, 3])).toBe(6)
-
-// 包含负数的数组
-expect(CalcInst.sum([10, -5, 3.5])).toBe(8.5)
-
-// 对象求和（含null值）
-expect(CalcInst.sum({ x: 10, y: null as any, z: 5 })).toBe(15)
-
-// 非数字值过滤
-expect(CalcInst.sum([1, '2' as any, true, 3])).toBe(4)
-
-// 精度配置测试
-expect(CalcInst.sum([1.1111, 2.2222, 3.3333], { precision: 3 })).toBe(6.667)
-
-// 缓存验证
-const cacheSize = CalcInst.getCache().sum.size
-CalcInst.sum([1,2,3,4,5])
-expect(CalcInst.getCache().sum.size).toBe(cacheSize + 1)
-```
+- 该方法在计算过程中会过滤掉输入数据中的无效值（如非数字类型、`null`、`NaN` 等）。
+ - 对于加法运算，会使用 `Decimal.js` 进行高精度计算，以确保计算结果的准确性。
+ - 方法具备缓存机制，会根据输入数据和配置选项生成唯一的缓存键，相同输入的计算结果将直接从缓存中获取，避免重复计算，提高计算效率。
 
 ***
 
