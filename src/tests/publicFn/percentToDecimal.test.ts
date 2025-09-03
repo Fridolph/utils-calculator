@@ -1,18 +1,5 @@
 import { CalcInst } from '../../main'
 
-// describe('debugger', () => {
-//   beforeEach(() => {
-//     CalcInst.resetInstance()
-//   })
-  
-//   it('应该使用方法级精度配置覆盖全局配置', () => {
-//     expect(CalcInst.percentToDecimal(33.333333, { outputDecimalPlaces: 2 })).toBe(0.33) // 0.33333333
-//     expect(CalcInst.percentToDecimal(33.333333, { outputDecimalPlaces: 4 })).toBe(
-//       0.3333
-//     )
-//   })
-// })
-
 describe('percentToDecimal()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()

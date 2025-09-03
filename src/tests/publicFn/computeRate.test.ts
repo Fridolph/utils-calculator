@@ -1,18 +1,5 @@
 import { CalcInst } from '../../main'
 
-// describe('debugger >>> Calculator.computeRate()', () => {
-//   beforeEach(() => {
-//     CalcInst.resetInstance()
-//   })
-
-//   it('超大数值的税率计算', () => {
-//     const result = CalcInst.computeRate(1e15, { taxRate: 0.1, outputDecimalPlaces: 0 })
-//     // 1e15 -> 1000000000000000  16个0 计算后自身精度丢1 -> 15位 * 0.1 
-//     // 90909090909090.9 -> 由于 outputDecimalPlaces为0 四舍五入了  -> 90909090909091
-//     expect(result).toBe(90909090909091)
-//   })
-// })
-
 describe('Calculator.computeRate()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()

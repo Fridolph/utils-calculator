@@ -1,17 +1,5 @@
 import { CalcInst } from '../../main'
 
-// describe('debugger >>> 基础功能测试', () => {
-//   beforeEach(() => {
-//     CalcInst.resetInstance()
-//   })
-
-//   it('极小值处理 - 保留精度', () => {
-//     expect(CalcInst.decimalToPercent(0.00000001)).toBe(0.000001)
-//     expect(CalcInst.decimalToPercent(0.00000001, 5)).toBe(0) // 0.000001 -> 0
-//     expect(CalcInst.decimalToPercent(0.0000009, 4)).toBe(0.0001) // 0.00009 -> 0.0001
-//   })
-// })
-
 describe('Calculator.decimalToPercent()', () => {
   beforeEach(() => {
     CalcInst.resetInstance()
