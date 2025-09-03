@@ -1,4 +1,4 @@
-import Decimal from 'decimal.js'
+import type Decimal from 'decimal.js'
 import { defaultDecimalConfigs } from '../constants'
 
 export const isNumber = (value: unknown): value is number => {
@@ -78,7 +78,7 @@ export const getDecimalPlaces = (
   // 输入有效性验证
   if (
     (typeof originNumber !== 'number' && typeof originNumber !== 'string') ||
-    isNaN(originNumber as any)
+    Number.isNaN(originNumber as any)
   ) {
     console.warn('请传入正确的数据类型，应为 Number 或 String 类型的数字')
     return defaultDecimal
@@ -95,7 +95,7 @@ export const getDecimalPlaces = (
     // 直接分析科学计数法字符串
     const frontDigits = frontPart.replace('.', '')
     const exponent = parseInt(exponentPart, 10)
-    let decimalPlaces
+    let decimalPlaces: number
     // 对于底数为 1 的情况，如 1e - n，小数位数直接等于指数 n
     if (frontDigits === '1' && exponent > 0) {
       decimalPlaces = exponent
