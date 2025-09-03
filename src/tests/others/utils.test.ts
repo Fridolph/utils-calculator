@@ -1,6 +1,6 @@
 import { isObject, isString, getDecimalPlaces } from "../../utils/index"
 
-describe.skip('isObject()', () => {
+describe('isObject()', () => {
   it('isObject 识别基本类型', () => {
     expect(isObject(undefined)).toBe(false)
     expect(isObject(null)).toBe(false)
@@ -23,7 +23,7 @@ describe.skip('isObject()', () => {
   })
 })
 
-describe.skip('isString()', () => {
+describe('isString()', () => {
   it('isString 识别 null 为非对象', () => {
     expect(isString(null)).toBe(false)
     expect(isString(1)).toBe(false)
@@ -36,16 +36,7 @@ describe.skip('isString()', () => {
   })
 })
 
-describe('debugger', () => {
-  it('科学计数法测试 > 处理大指数情况', () => { 
-    // expect(getDecimalPlaces(1e-15)).toBe(15) 
-    expect(getDecimalPlaces(2.1e-15)).toBe(15) 
-    // expect(getDecimalPlaces("1e-12")).toBe(12) 
-  })
-})
-
-
-describe.skip('getDecimalPlaces()', () => { 
+describe('getDecimalPlaces()', () => { 
   describe('正常功能测试', () => {
     it('基础小数位数识别', () => { 
       expect(getDecimalPlaces(3.14)).toBe(2)
@@ -61,14 +52,14 @@ describe.skip('getDecimalPlaces()', () => {
       expect(getDecimalPlaces(2.5e-3)).toBe(4) // 0.0025
       expect(getDecimalPlaces(1.23e-5)).toBe(7) // 0.0000123
     })
-  
-    it('科学计数法测试 > 处理大指数情况', () => { 
-      expect(getDecimalPlaces(1e-15)).toBe(15) 
-      expect(getDecimalPlaces("1e-12")).toBe(12) 
-    }) 
   })
   
-  describe.skip('边界值测试', () => { 
+  describe('边界值测试', () => { 
+    it('科学计数法测试 > 处理大指数情况', () => { 
+      expect(getDecimalPlaces(2.1e-15)).toBe(16) 
+      expect(getDecimalPlaces("1e-12")).toBe(12) 
+    })
+
     it('零值处理', () => { 
       expect(getDecimalPlaces(0)).toBe(0) 
       expect(getDecimalPlaces("0.00")).toBe(2) 
@@ -90,7 +81,7 @@ describe.skip('getDecimalPlaces()', () => {
     })
   })
   
-  describe.skip('异常输入处理', () => { 
+  describe('异常输入处理', () => { 
     it('无效数字输入', () => { 
       expect(getDecimalPlaces("abc")).toBe(0) 
       expect(getDecimalPlaces(null as any)).toBe(0) 

@@ -10,8 +10,8 @@
  * 5. 一些大边界 Infinity 等不做特殊处理
  */
 import Decimal from 'decimal.js'
-import { isNumber, isObject, isString } from './utils/type'
-import { getDecimalPlaces } from './utils/string'
+import { isNumber, isObject, isString, getDecimalPlaces } from './utils'
+import { defaultDecimalConfigs } from './constants'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -27,17 +27,6 @@ const defaultUserOptions: UserOptions = {
   rateType: 'INCL', // 重构前 为 RateType 这里命名更通用，一般用到了都是要计算税的，默认值取 INCL
 }
 Object.seal(defaultUserOptions)
-
-const defaultDecimalConfigs: Decimal.Config = {
-  precision: 16, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
-  rounding: Decimal.ROUND_HALF_UP, // 使用标准四舍五入 5进位 4舍去
-  toExpNeg: -7,
-  toExpPos: 21,
-  maxE: 9e15,
-  minE: -9e15,
-  modulo: 1,
-  crypto: false,
-}
 Object.seal(defaultDecimalConfigs)
 
 const cacheFnList = [
