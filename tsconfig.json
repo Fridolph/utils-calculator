@@ -1,20 +1,28 @@
 {
   "include": [
     "src/**/*",
-    "src/tests/**/*",       // 新增测试目录
-    "src/__tests__/**/*",        // 添加 __tests__ 目录
-    "src/tests/**/*",           // 保留原有 tests 目录
     "src/types/**/*",
-    "main.js"
+    "index.js"
+  ],
+  "exclude": [
+    "src/tests/**/*", // 新增测试目录
+    "src/__tests__/**/*", // 添加 __tests__ 目录
+    "src/tests/**/*", // 保留原有 tests 目录
   ],
   "compilerOptions": {
-    "typeRoots": ["src/types", "./node_modules/@types"],  // 优先使用自定义类型
-    "rootDir": ".",                                    // 根目录
-    "outDir": "./dist",
+    "typeRoots": ["src/types", "./node_modules/@types"], // 优先使用自定义类型
+    "rootDir": "./src", // 根目录
+    "declaration": true,
+    "outDir": "./.temp",
+    // 清除任何不必要的中间目录结构生成
+    "removeComments": true,
+    "preserveConstEnums": true,
+    // 尽可能合并输出
+    "composite": false,
     "module": "commonjs",
     "moduleResolution": "Node",
     "target": "es2021",
-    "types": ["jest"],                                 // 确保jest类型
+    "types": ["jest"], // 确保jest类型
     "lib": ["ES2021", "DOM"],
     "esModuleInterop": true,
     "strict": true,
