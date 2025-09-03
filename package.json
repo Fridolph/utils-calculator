@@ -1,15 +1,17 @@
 {
   "name": "utils-calculator",
-  "version": "1.1.2",
+  "version": "2.0.0-beta.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/"
   ],
   "scripts": {
-    "build": "npx tsc",
+    "dev": "vite",
+    "build": "npx tsc && rolldown -c rolldown.config.ts",
     "lint": "pnpm exec biome lint --write src",
     "test": "npx jest",
+    "debug": "node --inspect-brk -r ts-node/register src/tests/others/utils.test.ts",
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
     "coverage:badge": "node scripts/generate-coverage-badge.js",
@@ -34,7 +36,7 @@
   "license": "Apache License",
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {
-    "currency.js": "^2.0.4",
+    "@babel/core": "^7.28.3",
     "decimal.js": "^10.6.0"
   },
   "devDependencies": {
@@ -56,7 +58,13 @@
     "tsdoc-markdown": "^1.4.1",
     "typedoc": "^0.28.11",
     "typedoc-plugin-markdown": "^4.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vite": "npm:rolldown-vite@^7.1.5"
   },
-  "packageManager": "pnpm@10.0.0"
+  "packageManager": "pnpm@10.0.0",
+  "pnpm": {
+    "overrides": {
+      "vite": "npm:rolldown-vite@latest"
+    }
+  }
 }
