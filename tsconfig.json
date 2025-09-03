@@ -5,7 +5,7 @@
     "src/__tests__/**/*",        // 添加 __tests__ 目录
     "src/tests/**/*",           // 保留原有 tests 目录
     "src/types/**/*",
-    "index.js"
+    "main.js"
   ],
   "compilerOptions": {
     "typeRoots": ["src/types", "./node_modules/@types"],  // 优先使用自定义类型

@@ -1,8 +1,8 @@
-**utils-calculator v1.1.2**
+**utils-calculator v2.0.0**
 
 ***
 
-# utils-calculator v1.1.2
+# utils-calculator v2.0.0
 
 ## Classes
 
@@ -11,3 +11,9 @@
 ## Variables
 
 - [CalcInst](variables/CalcInst.md)
+
+## References
+
+### default
+
+Renames and re-exports [Calculator](classes/Calculator.md)

@@ -5,7 +5,6 @@ describe('sum()', () => {
     CalcInst.resetInstance()
   })
 
-  describe('debugger >>> 异常输入 及 边界处理', () => {})
 
   describe('正常加法运算', () => {
     it('数组求和 [1, 2, 3] -> 6', () => {
@@ -48,6 +47,11 @@ describe('sum()', () => {
       CalcInst.setUserOption('keepParamsMaxPrecision', true)
       CalcInst.setUserOption('outputDecimalPlaces', 2)
       expect(CalcInst.sum([1.1, 2.22, 3.333])).toBe(6.65) // 1.1+2.22+3.333=6.653（不四舍五入）
+    })
+
+    it('不处理包含 Infinity 的数组，会过掉掉进行计算', () => {
+      expect(CalcInst.sum([Infinity, 1])).toBe(1)
+      expect(CalcInst.sum([-Infinity, -1])).toBe(-1)
     })
   })
 
@@ -155,9 +159,9 @@ describe('sum()', () => {
       expect(CalcInst.sum(nestedObj)).toBe(15)
     })
 
-    // it('应处理包含 Infinity 的数组', () => {
-    //   expect(CalcInst.sum([Infinity, 1])).toBe(Infinity)
-    //   expect(CalcInst.sum([-Infinity, 1])).toBe(-Infinity)
+    // it('不处理包含 Infinity 的数组，会过掉掉进行计算', () => {
+    //   expect(CalcInst.sum([Infinity, 1])).toBe(1)
+    //   expect(CalcInst.sum([-Infinity, -1])).toBe(-1)
     // })
   })
 

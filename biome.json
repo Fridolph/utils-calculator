@@ -17,11 +17,13 @@
 		"includes": ["src/**/*.ts", "src/**/*.js", "!tests/**", "!types/**"],
 		"rules": {
 			"recommended": true,
+			
 			"correctness": {
 				"noUnusedVariables": "off"
 			},
 			"suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+				"noApproximativeNumericConstant": "off"
       }
 		}
 	},
