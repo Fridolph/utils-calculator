@@ -10,10 +10,10 @@
     "src/tests/**/*", // 保留原有 tests 目录
   ],
   "compilerOptions": {
-    "typeRoots": ["src/types", "./node_modules/@types"], // 优先使用自定义类型
+    "typeRoots": ["./src/types", "./node_modules/@types"], // 优先使用自定义类型
     "rootDir": "./src", // 根目录
     "declaration": true,
-    "outDir": "./.temp",
+    "outDir": "./dist-temp",
     // 清除任何不必要的中间目录结构生成
     "removeComments": true,
     "preserveConstEnums": true,

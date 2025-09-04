@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "npx tsc && rolldown -c rolldown.config.ts",
+    "build": "npm run build:types && npm run build:bundle",
+    "build:types": "tsc --build --clean && tsc --emitDeclarationOnly && tsc",
+    "build:bundle": "rolldown --config rolldown.config.ts",
     "lint": "pnpm exec biome lint --write src",
     "test": "npx jest",
     "debug": "node --inspect-brk -r ts-node/register src/tests/others/utils.test.ts",
@@ -36,10 +38,10 @@
   "license": "Apache License",
   "description": "A utility library named utils-calculator that provides a Calculator class with various calculation methods and caching functionality. This library simplifies complex calculations and enhances performance by efficiently managing calculation caches.",
   "dependencies": {
-    "@babel/core": "^7.28.3",
     "decimal.js": "^10.6.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.3",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-typescript": "^7.27.1",
     "@biomejs/biome": "2.2.2",
@@ -51,6 +53,7 @@
     "babel-jest": "^30.0.5",
     "jest": "^30.0.5",
     "nyc": "^17.1.0",
+    "rollup-plugin-dts": "^6.2.3",
     "semantic-release": "^24.2.7",
     "standard-version": "^9.5.0",
     "ts-jest": "^29.4.1",
@@ -58,13 +61,7 @@
     "tsdoc-markdown": "^1.4.1",
     "typedoc": "^0.28.11",
     "typedoc-plugin-markdown": "^4.8.1",
-    "typescript": "^5.9.2",
-    "vite": "npm:rolldown-vite@^7.1.5"
+    "typescript": "^5.9.2"
   },
-  "packageManager": "pnpm@10.0.0",
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:rolldown-vite@latest"
-    }
-  }
+  "packageManager": "pnpm@10.0.0"
 }
