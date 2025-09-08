@@ -34,6 +34,7 @@ declare class Calculator {
      * ```
      *
      * @example
+     * ```
      * // 单例模式与静态实例的等价性
      * expect(CalcInst).toBe(Calculator.getInstance());
      * ```

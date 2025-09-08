@@ -1,4 +1,4 @@
-[**utils-calculator v1.1.2**](../README.md)
+[**utils-calculator v2.0.0-beta.0**](../README.md)
 
 ***
 

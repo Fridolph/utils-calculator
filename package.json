@@ -2,6 +2,7 @@
   "name": "utils-calculator",
   "version": "2.0.0-beta.0",
   "main": "dist/index.js",
+  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/",
@@ -19,7 +20,10 @@
     "test:watch": "npx jest --watch",
     "coverage": "npx jest --coverage",
     "coverage:badge": "node scripts/generate-coverage-badge.js",
-    "docs": "npx typedoc --out docs --entryPoints src/main.ts --hideGenerator",
+    "tsdocs": "npx typedoc --out docs/apis --entryPoints src/main.ts --hideGenerator",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "readme": "npx typedoc --plugin typedoc-plugin-markdown --out ./docs-markdown --entryPoints src/main.ts --hideGenerator --excludeNotDocumented false --readme none --entryPointStrategy expand --githubPages false && cat ./docs-markdown/README.md > NEWREADME.md && rm -rf ./docs-markdown && echo 'README generated as NEWREADME.md to prevent accidental overwrites'",
     "docs:full": "pnpm run readme && pnpm run docs",
     "semantic-release": "npx semantic-release",
@@ -80,7 +84,8 @@
     "tslib": "^2.8.1",
     "typedoc": "^0.28.11",
     "typedoc-plugin-markdown": "^4.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitepress": "^1.6.4"
   },
   "packageManager": "pnpm@10.0.0"
 }

@@ -1,8 +1,8 @@
-**utils-calculator v1.1.2**
+**utils-calculator v2.0.0-beta.0**
 
 ***
 
-# utils-calculator v1.1.2
+# utils-calculator v2.0.0-beta.0
 
 ## Classes
 

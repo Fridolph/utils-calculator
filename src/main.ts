@@ -190,6 +190,7 @@ export class Calculator {
    * ```
    *
    * @example
+   * ```ts
    * // 单例模式与静态实例的等价性
    * expect(CalcInst).toBe(Calculator.getInstance());
    * ```
