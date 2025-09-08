@@ -9,9 +9,9 @@
  * 4. 错误逻辑，如分母为 0 的情况，将输出处理为 null
  * 5. 一些大边界 Infinity 等不做特殊处理
  */
-import Decimal from 'decimal.js'
 import { isNumber, isObject, isString } from './utils/type'
 import { getDecimalPlaces } from './utils/string'
+import Decimal from 'decimal.js'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -954,5 +954,5 @@ export class Calculator {
   }
 }
 
-// 导出单例实例
 export const CalcInst = Calculator.getInstance()
+export * as Decimal from 'decimal.js'
