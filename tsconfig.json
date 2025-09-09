@@ -43,6 +43,6 @@
     // 导入库类型定义
     "lib": ["esnext", "dom"],
     // 导入指定类型包
-    "types": []
+    "types": ["jest"]
   }
 }

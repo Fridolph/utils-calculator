@@ -206,6 +206,11 @@ export class Calculator {
     return Calculator.instance
   }
 
+  public calc(num: number | string) {
+    const Dec = Decimal.clone({ ...defaultDecimalConfigs })
+    return new Dec(num)
+  }
+
   /**
    * 增加一个可手动清除缓存的静态方法
    * @param cacheType

@@ -14,7 +14,9 @@ export const baseConfig = {
     resolve(),
     commonjs(),
     typescript({
+      tsconfig: './tsconfig.json',
       declaration: false,
+      emitDeclarationOnly: true,
     }),
     json(),
     replace({
