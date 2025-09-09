@@ -15,6 +15,14 @@ describe('subtractMultiple()', () => {
   })
 
   describe('传参异常及边界处理', () => {
+    it('应使用精度覆盖来处理空输入', () => {
+      expect(CalcInst.subtractMultiple(null as any, [], { outputDecimalPlaces: 3 })).toBe(0)
+    })
+
+    it('应处理包含NaN值的数组', () => {
+      expect(CalcInst.subtractMultiple(10, [NaN, 5] as any[])).toBe(5)
+    })
+    
     it('应处理 null 和 NaN 初始值', () => {
       expect(CalcInst.subtractMultiple(null as any, [5])).toBe(-5)
       expect(CalcInst.subtractMultiple('abc' as any, [6])).toBe(-6)

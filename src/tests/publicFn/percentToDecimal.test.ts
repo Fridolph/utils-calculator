@@ -80,6 +80,11 @@ describe('percentToDecimal()', () => {
       expect(CalcInst.percentToDecimal(-50)).toBe(-0.5)
       expect(CalcInst.percentToDecimal(-25.5)).toBe(-0.255)
     })
+
+    // TODO https://github.com/Fridolph/utils-calculator/issues/16
+    // it('should handle string number conversion', () => {
+    //   expect(CalcInst.percentToDecimal('100' as any)).toBe(1)
+    // })
   })
 
   describe('边界值测试', () => {

@@ -120,6 +120,25 @@ describe('Calculator.decimalToPercent()', () => {
       expect(CalcInst.decimalToPercent(0.333333, 3)).toBe(33.333)
       expect(CalcInst.decimalToPercent(0.66666666, 4)).toBe(66.6667)
     })
+
+    it('未配置时使用全局配置精度', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 3)
+      expect(CalcInst.decimalToPercent(0.333333333)).toBe(33.333)
+    })
+
+    // 全局配置影响
+    it('全局配置覆盖局部配置', () => {
+      CalcInst.setUserOption('outputDecimalPlaces', 4)
+      expect(CalcInst.decimalToPercent(0.66666666)).toBe(66.6667)
+    })
+
+    it('应正确重置小数配置', () => {
+      const originalConfig = CalcInst._getCalcConfigs()
+      CalcInst.setUserOption('outputDecimalPlaces', 3)
+      CalcInst.resetInstance()
+      console.log(originalConfig)
+      expect(CalcInst._getCalcConfigs()).toEqual(originalConfig)
+    })
   })
 
   describe('缓存验证', () => { 
@@ -158,10 +177,5 @@ describe('Calculator.decimalToPercent()', () => {
       expect(CalcInst.getCache('decimalToPercent').size).toBe(2)
     })
 
-    // 全局配置影响
-    it('全局配置覆盖局部配置', () => {
-      CalcInst.setUserOption('outputDecimalPlaces', 4)
-      expect(CalcInst.decimalToPercent(0.66666666)).toBe(66.6667)
-    })
   })
 })

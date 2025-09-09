@@ -7,7 +7,8 @@ export const getDecimalPlaces = (num: number | string) => {
   const numString = Number(num).toString()
   if (numString.includes('e-')) {
     return Number(numString.split('e-')?.[1])
-  } else {
+  }
+  else {
     const decimalPlaces = num?.toString().split('.')[1]?.length || 0
     return decimalPlaces <= 2 ? 2 : decimalPlaces
   }

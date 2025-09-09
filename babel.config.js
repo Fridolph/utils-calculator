@@ -4,8 +4,8 @@ module.exports = {
       '@babel/preset-env',
       {
         targets: {
-          node: '12',
-          browsers: ['>0.25%, last 2 versions'],
+          node: 'current',
+          browsers: ['>1%, last 3 versions'],
         },
         useBuiltIns: 'usage',
         corejs: 3,
@@ -18,6 +18,9 @@ module.exports = {
       '@babel/plugin-transform-runtime',
       {
         corejs: 3,
+        helpers: true,
+        regenerator: true,
+        version: '^7.28.3'
       },
     ],
   ],

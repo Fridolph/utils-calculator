@@ -1,14 +1,16 @@
 /**
  * @author: Fridolph
- * @description 基于 $number 计算的，把经常用到一些计算方法封装为一个工具类，也算是减少模版代码 W_W
- * @description 注意：为避免国际化带来的千分位及小数等问题，使用前请将传参都处理为通用的 Number 类型。类方法的输出都是基础数字类型
- * @description 约定
+ * @remarks 
+ * 基于 $number 计算的，把经常用到一些计算方法封装为一个工具类，也算是减少模版代码 W_W
+ * 注意: 为避免国际化带来的千分位及小数等问题，使用前请将传参都处理为通用的 Number 类型。类方法的输出都是基础数字类型
+ * 约定:
  * 1. 使用本类时，请务必在调用方法时传入参数，并确保参数类型正确，否则可能会导致计算错误或异常
  * 2. 为避免认知错误，计算方法只返原始计算结果的 Number 类型，若需 四舍五入 等处理，参考 API 设位，或用本仓库的一个 Format 转换
  * 3. 不直接报错，允许用户传入 0 和 null，及返回 null （产品希望某些情况，将错误值清空）
  * 4. 错误逻辑，如分母为 0 的情况，将输出处理为 null
  * 5. 一些大边界 Infinity 等不做特殊处理
  */
+
 import { isNumber, isObject, isString } from './utils/type'
 import { getDecimalPlaces } from './utils/string'
 import Decimal from 'decimal.js'
@@ -16,9 +18,11 @@ import Decimal from 'decimal.js'
 /**
  * 默认基础配置项：小数点，税率，税种等
  */
-const defaultUserOptions: UserOptions = {
-  // 是否保留计算结果的精度，如 0.22225 + 0.22225 = 0.4445
-  // 若不保留，按默认 precision: 2 来呈现最终结果 -> 0.44
+export const defaultUserOptions: UserOptions = {
+  /**
+   * 是否保留计算结果的精度，如 0.22225 + 0.22225 = 0.4445
+   * 若不保留，按默认 precision: 2 来呈现最终结果 -> 0.44
+   */
   keepParamsMaxPrecision: true,
   // 最终计算输出结果 精确到的小数位数
   // 根据业务需求自行调整, -1 为保留原始计算值
@@ -28,7 +32,7 @@ const defaultUserOptions: UserOptions = {
 }
 Object.seal(defaultUserOptions)
 
-const defaultDecimalConfigs: Decimal.Config = {
+export const defaultDecimalConfigs: Decimal.Config = {
   precision: 16, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
   rounding: Decimal.ROUND_HALF_UP, // 使用标准四舍五入 5进位 4舍去
   toExpNeg: -7,
@@ -388,13 +392,15 @@ export class Calculator {
 
     if (Array.isArray(data)) {
       numbersToSum = data.filter((num) => isNumber(num) && !Number.isNaN(num))
-    } else if (isObject(data)) {
+    }
+    else if (isObject(data)) {
       // 处理为安全的数字类型（至少 要保证传入的都是数字类型 -> 下面这种处理好再传进来呀
       // 为避免认知混淆，一律不为数字的，如 '123', '$4.00' 都过滤掉）
       numbersToSum = Object.values(data).filter(
         (value: unknown): value is number => isNumber(value) && !Number.isNaN(value)
       )
-    } else if (isNumber(data)) {
+    }
+    else if (isNumber(data)) {
       numbersToSum = [data]
     }
 
@@ -725,6 +731,7 @@ export class Calculator {
     }
     // console.log('curUserOptions', curUserOptions)
     
+    
     if (isObject(userOptions)) {
       Object.entries(userOptions).forEach(([key, val]) => {
         curUserOptions[key] = val
@@ -909,7 +916,7 @@ export class Calculator {
         curUserOptions[key] = val
       })
     }
-
+    
     // console.log('🚀 ~ 传参 args >>> ', args, originPrice, curUserOptions)
     const finalDigitNumber = userOptions.outputDecimalPlaces === -1 
       ? -1 
