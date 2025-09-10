@@ -13,13 +13,15 @@ export default {
   coverageReporters: ['text', 'lcov'],
   coverageDirectory: '<rootDir>/coverage',
   transform: {
-    '\\.[jt]sx?$': [
-      'ts-jest',
-      {
-        useESM: true, // 启用ESM支持
-        babelConfig: true, // 使用Babel
-      },
-    ],
+    // '\\.[jt]sx?$': [
+    //   'ts-jest',
+    //   {
+    //     useESM: true, // 启用ESM支持
+    //     babelConfig: true, // 使用Babel
+    //   },
+    // ],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
+    '^.+\\.jsx?$': ['babel-jest', { configFile: '<rootDir>/babel.config.js' }]
   },
   moduleNameMapper: {
     '^utils-calculator$': '<rootDir>/src/index.ts', // 显式指定模块

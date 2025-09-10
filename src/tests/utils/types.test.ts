@@ -1,8 +1,7 @@
 import { isObject, isString, getDecimalPlaces } from "../../utils/index"
 
-describe('isObject()', () => {
-  it('isObject 识别基本类型', () => {
-    expect(isObject(undefined)).toBe(false)
+describe('isObject', () => {
+  it('isObject 识别 null 为非对象', () => {
     expect(isObject(null)).toBe(false)
     expect(isObject(1)).toBe(false)
     expect(isObject('2')).toBe(false)

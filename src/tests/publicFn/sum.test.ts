@@ -201,5 +201,19 @@ describe('sum()', () => {
       })
       expect(key1).toBe(key2)
     })
+
+    it('应正确跟踪缓存统计信息', () => {
+      CalcInst.clearCache('all')
+      CalcInst.sum([1, 2])
+      CalcInst.sum([1, 2]) // 命中缓存
+      expect(CalcInst.queryCacheStat().sum).toBe(1)
+      expect(CalcInst.queryCacheStat('sum').sum).toBe(1)
+    })
+
+    it('应处理无效的缓存类型', () => {
+      const stats = CalcInst.queryCacheStat('invalidType' as CacheType)
+      expect(stats.all).toBe(0)
+      expect(stats.sum).toBe(0)
+    })
   })
 })

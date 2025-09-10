@@ -155,5 +155,34 @@ describe('calcLinePrice()', () => {
       })
       expect(key1).toBe(key2)
     })
+
+    it('应为嵌套对象生成一致的缓存键', () => {
+      const obj1 = { a: { b: 1 }, c: [2, 3] }
+      const obj2 = { c: [2, 3], a: { b: 1 } }
+      const key1 = CalcInst.generateCacheKey({
+        data: obj1,
+        mergedOptions: CalcInst._getUserOptions()
+      })
+      const key2 = CalcInst.generateCacheKey({
+        data: obj2,
+        mergedOptions: CalcInst._getUserOptions()
+      })
+      expect(key1).toBe(key2)
+    })
+
+    it('应处理缓存键中的数组顺序', () => {
+      const arr1 = [1, { a: 2 }]
+      const arr2 = [{ a: 2 }, 1]
+      const key1 = CalcInst.generateCacheKey({
+        data: arr1,
+        mergedOptions: CalcInst._getUserOptions()
+      })
+      const key2 = CalcInst.generateCacheKey({
+        data: arr2,
+        mergedOptions: CalcInst._getUserOptions()
+      })
+      expect(key1).not.toBe(key2)
+    })
+
   })
 })
