@@ -128,14 +128,14 @@ describe('Calculator.computeRate()', () => {
     })
 
     it('同样的参数，根据不同配置输出不同精度结果', () => {
-      expect(CalcInst.computeRate(1010, 0.65555555555)).toBe(399.932885903993) // 399.932885903993
+      expect(CalcInst.computeRate(1010, 0.65555555555)).toBe(399.93288590399305) // 399.93288590399305
       expect(CalcInst.computeRate(100, { taxRate: 0.65555555555, outputDecimalPlaces: 2 })).toBe(39.60) // 39.59731543603892
       expect(CalcInst.computeRate(100, { taxRate: 0.65555555555, outputDecimalPlaces: 4 })).toBe(39.5973) // 39.59731543603892  
     })
 
     it('修改全局 taxRate 后，没传参，应该用 修改后的税率计算结果', () => {
       CalcInst.setUserOption('taxRate', 0.2225)
-      expect(CalcInst.computeRate(150)).toBe(27.30061349693252) // 原始计算结果
+      expect(CalcInst.computeRate(150)).toBe(27.300613496932517) // 原始计算结果
       expect(CalcInst.computeRate(150, { outputDecimalPlaces: 2 })).toBe(27.30) // 原始计算结果
       expect(CalcInst.computeRate(150, { outputDecimalPlaces: 3 })).toBe(27.301) // 原始计算结果
       expect(CalcInst.computeRate(150, { outputDecimalPlaces: 4 })).toBe(27.3006) // 原始计算结果

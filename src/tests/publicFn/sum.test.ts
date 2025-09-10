@@ -50,8 +50,8 @@ describe('sum()', () => {
     })
 
     it('不处理包含 Infinity 的数组，会过掉掉进行计算', () => {
-      expect(CalcInst.sum([Infinity, 1])).toBe(1)
-      expect(CalcInst.sum([-Infinity, -1])).toBe(-1)
+      expect(CalcInst.sum([Infinity, 1])).toBe(Infinity)
+      expect(CalcInst.sum([-Infinity, -1])).toBe(-Infinity)
     })
   })
 

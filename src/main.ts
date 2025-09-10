@@ -12,8 +12,9 @@
  */
 
 import { isNumber, isObject, isString } from './utils/index'
-import { getDecimalPlaces } from './utils/string'
+import { getDecimalPlaces } from './utils'
 import Decimal from 'decimal.js'
+import { assign } from './utils/assign'
 
 /**
  * 默认基础配置项：小数点，税率，税种等
@@ -33,7 +34,7 @@ export const defaultUserOptions: UserOptions = {
 Object.seal(defaultUserOptions)
 
 export const defaultDecimalConfigs: Decimal.Config = {
-  precision: 16, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
+  precision: 20, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
   rounding: Decimal.ROUND_HALF_UP, // 使用标准四舍五入 5进位 4舍去
   toExpNeg: -7,
   toExpPos: 21,
@@ -97,8 +98,8 @@ export class Calculator {
         this.userOptions.keepParamsMaxPrecision = value as boolean
         break
       case 'outputDecimalPlaces':
-        if (typeof value !== 'number' || value > 16 || (value < 0 && value !== -1)) {
-          throw new Error('参数 outputDecimalPlaces 应该为 [0, 16] 间的数字，或者 -1 表示不进行四舍五入直接返回原始值')
+        if (typeof value !== 'number' || value > 20 || (value < 0 && value !== -1)) {
+          throw new Error('参数 outputDecimalPlaces 应该为 [0, 20] 间的数字，或者 -1 表示不进行四舍五入直接返回原始值')
         }
         this.userOptions.outputDecimalPlaces = value
         break
@@ -329,7 +330,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -353,7 +354,7 @@ export class Calculator {
    * 
    * @throws {Error} 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 
@@ -368,17 +369,15 @@ export class Calculator {
     data: number | number[] | { [key: string]: number },
     userOptions?: Partial<UserOptions>
   ): number {
-    const mergedOptions = { ...this._getUserOptions() }
+    let mergedOptions: UserOptions = { ...this._getUserOptions() }
     if (
-      mergedOptions !== null &&
       isObject(userOptions) &&
       Object.keys(userOptions).length > 0
     ) {
-      Object.entries(userOptions).forEach(([key, val]) => {
-        if (key in this.userOptions) {
-          mergedOptions[key as keyof UserOptions] = val as any
-        }
-      })
+      mergedOptions = { 
+        ...this._getUserOptions(), 
+        ...(userOptions || {}) 
+      }
     }
     const DecimalClone = Decimal.clone({ ...defaultDecimalConfigs })
 
@@ -439,7 +438,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -459,7 +458,7 @@ export class Calculator {
    * 
    * @throws {Error} 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 
@@ -541,7 +540,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -565,7 +564,7 @@ export class Calculator {
    * 
    * @throws {Error} 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 
@@ -664,7 +663,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此配置用于控制计算结果的精度。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此配置用于控制计算结果的精度。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -696,7 +695,7 @@ export class Calculator {
    * 
    * @throws {Error} 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 
@@ -794,7 +793,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于配置计算结果的精度。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于配置计算结果的精度。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -817,7 +816,7 @@ export class Calculator {
    * 
    * @throws {Error} - 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 
@@ -922,7 +921,7 @@ export class Calculator {
    * 
    * @param {Partial<UserOptions>} [userOptions] - 用户自定义的配置选项（可选）。
    *  - **keepParamsMaxPrecision** ：布尔值，默认为 `true`。若为 `true`，将保留参数中的最大精度；若为 `false`，则按照 `outputDecimalPlaces` 配置输出结果。
-   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `16`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于控制转换后的小数精度。
+   *  - **outputDecimalPlaces** ：数字类型，取值范围为 `-1` 到 `20`。 `-1` 表示保留原始计算值，不进行四舍五入处理；其他正值表示计算结果精确到的小数位数。此参数用于控制转换后的小数精度。
    *  - **taxRate** ：数字类型，取值范围为 `0` 到 `1`，表示税率，默认为 `0.1`。
    *  - **rateType** ：取值为 `'EXCL'`、`'INCL'`、`'FREE'` 之一，用于指定税率计算类型，默认为 `'INCL'`。
    * 
@@ -940,7 +939,7 @@ export class Calculator {
    * 
    * @throws {Error} - 当 `userOptions` 中的配置项不符合要求时，会抛出相应的错误。
    *  - 若 `keepParamsMaxPrecision` 不是布尔值，抛出 `参数 keepParamsMaxPrecision 应该为 Boolean 值`。
-   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `16` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 16] 间的数字`。
+   *  - 若 `outputDecimalPlaces` 不是 `-1` 到 `20` 之间的数字，抛出 `参数 outputDecimalPlaces 应该为 [-1, 20] 间的数字`。
    *  - 若 `taxRate` 不是 `0` 到 `1` 之间的数字，抛出 `参数 taxRate 应该为 [0, 1] 间的数字`。
    *  - 若 `rateType` 不是 `'EXCL'`、`'INCL'`、`'FREE'` 之一，抛出 `请传入正确的 RateType 类型，应该为 'EXCL', 'INCL', 'FREE' 之一`。
    * 

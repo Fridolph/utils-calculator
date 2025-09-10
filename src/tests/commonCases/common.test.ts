@@ -1,5 +1,4 @@
 import { CalcInst } from '../../main'
-import { isNumber } from '../../utils/type'
 // import Decimal from 'decimal.js'
 // import { defaultUserOptions, defaultDecimalConfigs } from '../../main'
 

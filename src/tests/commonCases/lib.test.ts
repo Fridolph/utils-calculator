@@ -14,7 +14,7 @@ describe('默认配置符合预期', () => {
 
   it('defaultDecimalConfigs', () => {
     expect(defaultDecimalConfigs).toEqual({
-      precision: 16, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
+      precision: 20, // 计算精度，参考 decimal.js 文档，可根据需求灵活调整
       rounding: Decimal.ROUND_HALF_UP, // 使用标准四舍五入 5进位 4舍去
       toExpNeg: -7,
       toExpPos: 21,

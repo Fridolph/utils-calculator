@@ -7,7 +7,8 @@ describe('isObject', () => {
     expect(isObject('2')).toBe(false)
     expect(isObject(false)).toBe(false)
     expect(isObject(Symbol('3'))).toBe(false)
-    expect(isObject(123456789012345678901234567890n)).toBe(false)
+    const bigintValue = BigInt("123456789012345678901234567890")
+    expect(isObject(bigintValue)).toBe(false)
   })
 
   it('isObject 识别引用类型', () => {

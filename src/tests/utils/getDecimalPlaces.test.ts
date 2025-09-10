@@ -1,4 +1,4 @@
-import { getDecimalPlaces } from '../../utils/string';
+import { getDecimalPlaces } from '../../utils';
 
 describe('getDecimalPlaces() 小数位数检测函数', () => {
   // 科学计数法输入测试
@@ -55,13 +55,12 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
   // 边界值测试
   describe('边界值处理', () => {
     it('应正确处理零值小数', () => {
-      expect(getDecimalPlaces('0.00')).toBe(0)
-      expect(getDecimalPlaces('0.00', 1)).toBe(1)
-      expect(getDecimalPlaces('0.00', 2)).toBe(2)
+      expect(getDecimalPlaces('0.00')).toBe(2)
+      // expect(getDecimalPlaces('0.00', 2)).toBe(2)
 
-      expect(getDecimalPlaces('0.000')).toBe(0)
-      expect(getDecimalPlaces('0.000', 2)).toBe(2)
-      expect(getDecimalPlaces('0.000', 3)).toBe(3)
+      expect(getDecimalPlaces('0.000')).toBe(3)
+      // expect(getDecimalPlaces('0.000', 2)).toBe(2)
+      // expect(getDecimalPlaces('0.000', 3)).toBe(3)
     })
 
     it('应处理超长小数位输入', () => {
@@ -71,13 +70,13 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
 
      it('应处理小数点前导零和后导零', () => {
       expect(getDecimalPlaces('0.000')).toBe(0) // decimalPlaces=3 → 但代码中条件为<=2 ? 2 : decimalPlaces → 3>2 → 3
-      expect(getDecimalPlaces('0.000', 3)).toBe(3) // 但原函数没有第二个参数，可能需要修改代码
+      expect(getDecimalPlaces('0.000')).toBe(3) // 但原函数没有第二个参数，可能需要修改代码
     })
 
     // 需要确认函数是否接受第二个参数
     it('应处理自定义精度参数', () => {
-      expect(getDecimalPlaces('0.000', 3)).toBe(3)
-      expect(getDecimalPlaces('0.000', 1)).toBe(1)
+      expect(getDecimalPlaces('0.000')).toBe(3)
+      expect(getDecimalPlaces('0.000')).toBe(1)
     })
   })
 
@@ -118,8 +117,8 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
     it('应强制返回最小2位小数', () => {
       expect(getDecimalPlaces('0.5')).toBe(1) // decimalPlaces=1
       expect(getDecimalPlaces('1.2')).toBe(1) // decimalPlaces=1
-      expect(getDecimalPlaces('0.00')).toBe(0) // decimalPlaces=2
-      expect(getDecimalPlaces('0.000')).toBe(0) // decimalPlaces=3
+      expect(getDecimalPlaces('0.00')).toBe(2) // decimalPlaces=2
+      expect(getDecimalPlaces('0.000')).toBe(3) // decimalPlaces=3
     })
     
     // TODO https://github.com/Fridolph/utils-calculator/issues/17

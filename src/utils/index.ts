@@ -28,7 +28,7 @@ export const isObject = (value: unknown): value is object => {
   })
  */
 export const defaultDecimalConfig: Decimal.Config = {
-  precision: 16, // 暂时使用16位精度，可根据需求灵活调整
+  precision: 20, // 暂时使用20位精度，同 Decimal 默认配置。可根据需求灵活调整
   rounding: 4, // 使用标准四舍五入 5进位 4舍去
   toExpNeg: -7,
   toExpPos: 21,
