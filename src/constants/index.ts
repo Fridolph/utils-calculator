@@ -10,3 +10,4 @@ export const defaultDecimalConfigs: Decimal.Config = {
   modulo: 1,
   crypto: false,
 }
+Object.seal(defaultDecimalConfigs)

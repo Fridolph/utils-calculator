@@ -8,7 +8,7 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
       expect(getDecimalPlaces('2.5e-3')).toBe(4)
       expect(getDecimalPlaces('123e-5')).toBe(5)
       expect(getDecimalPlaces('0.123e-5')).toBe(8)
-      expect(getDecimalPlaces('2340000e-3')).toBe(0)
+      expect(getDecimalPlaces('2340000e-3')).toBe(0) // 2340000e-3 -> 2340 -> 0
     })
 
     it('应处理科学计数法中的整数输入', () => {
@@ -56,11 +56,7 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
   describe('边界值处理', () => {
     it('应正确处理零值小数', () => {
       expect(getDecimalPlaces('0.00')).toBe(2)
-      // expect(getDecimalPlaces('0.00', 2)).toBe(2)
-
       expect(getDecimalPlaces('0.000')).toBe(3)
-      // expect(getDecimalPlaces('0.000', 2)).toBe(2)
-      // expect(getDecimalPlaces('0.000', 3)).toBe(3)
     })
 
     it('应处理超长小数位输入', () => {
@@ -69,14 +65,12 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
     })
 
      it('应处理小数点前导零和后导零', () => {
-      expect(getDecimalPlaces('0.000')).toBe(0) // decimalPlaces=3 → 但代码中条件为<=2 ? 2 : decimalPlaces → 3>2 → 3
-      expect(getDecimalPlaces('0.000')).toBe(3) // 但原函数没有第二个参数，可能需要修改代码
+      expect(getDecimalPlaces('0.000')).toBe(3)
     })
 
     // 需要确认函数是否接受第二个参数
     it('应处理自定义精度参数', () => {
-      expect(getDecimalPlaces('0.000')).toBe(3)
-      expect(getDecimalPlaces('0.000')).toBe(1)
+      expect(getDecimalPlaces('0.0000')).toBe(4)
     })
   })
 
@@ -121,16 +115,12 @@ describe('getDecimalPlaces() 小数位数检测函数', () => {
       expect(getDecimalPlaces('0.000')).toBe(3) // decimalPlaces=3
     })
     
-    // TODO https://github.com/Fridolph/utils-calculator/issues/17
-    // it('应处理整数输入', () => {
-    //   expect(getDecimalPlaces('100')).toBe(0) // decimalPlaces=0
-    //   expect(getDecimalPlaces('100.0000')).toBe(4) // decimalPlaces=1
-    // })
-
-    // it('应正确处理小数点后零值', () => {
-    //   expect(getDecimalPlaces('0.000000')).toBe(6)
-    //   expect(getDecimalPlaces('0.000000', 4)).toBe(4)
-    // })
+    // feature https://github.com/Fridolph/utils-calculator/issues/17
+    it('应正确处理小数点后零值', () => {
+      expect(getDecimalPlaces('100')).toBe(0) // decimalPlaces=0
+      expect(getDecimalPlaces('100.0')).toBe(1) // decimalPlaces=0
+      expect(getDecimalPlaces('100.000000')).toBe(6) // decimalPlaces=1
+    })
   })
 
   // 新增异常流覆盖

@@ -63,7 +63,7 @@ type GetDecimalPlacesOptions = {
  * getDecimalPlaces("1.23") // 2
  *
  * @param {Number} originNumber - 原始数值，传入Number或String类型的数字，如 12.43, '54.32'
- * @param {GetDecimalPlacesOptions} [options] - 配置选项（可选） 原始数值，传入Number或String类型的数字，如 12.43, '54.32'
+ * @param {GetDecimalPlacesOptions} [options] - 配置选项（可选）
  * @returns {number} 返回经过处理和校验后的小数位数，若输入无效则返回默认小数位数
  */
 export const getDecimalPlaces = (
@@ -88,30 +88,44 @@ export const getDecimalPlaces = (
     ? Number(originNumber).toString()
     : originNumber
 
-  // console.log(originNumber, ' >>> numString', numString)
   // 科学计数法处理
-  if (numString.includes('e-')) {
-    const [frontPart, exponentPart] = numString.split('e-')
-    // 直接分析科学计数法字符串
-    const frontDigits = frontPart.replace('.', '')
-    const exponent = parseInt(exponentPart, 10)
-    let decimalPlaces: number
-    // 对于底数为 1 的情况，如 1e - n，小数位数直接等于指数 n
-    if (frontDigits === '1' && exponent > 0) {
-      decimalPlaces = exponent
+  // 添加了对e0的处理逻辑，修改了科学计数法e-中底数部分小数位数计算逻辑
+  if (numString.includes('e')) {
+    if (numString.includes('e0')) {
+      const newNum = eval(numString)
+      return getDecimalPlaces(newNum, options)
     }
-    // 对于底数不为 1 的情况，小数位数是指数加上前导数字部分长度再减 1
-    // 这是因为底数部分的第一个数字不是额外增加的小数
-    else {
-      decimalPlaces =
-        exponent + frontDigits.length - (frontPart.includes('.') ? 1 : 0)
+    else if (numString.includes('e-')) {
+      const [frontPart, exponentPart] = numString.split('e-')
+      const exponent = parseInt(exponentPart, 10)
+      if (exponent === 0) return 0
+      const baseDecimalPart = frontPart.split('.')[1] || ''
+      const baseDecimalLength = baseDecimalPart.length
+      let decimalPlaces: number
+      if (frontPart === '1' && exponent > 0) {
+        decimalPlaces = exponent
+      } else {
+        decimalPlaces = exponent + baseDecimalLength
+      }
+      // 新增逻辑：判断经过指数运算后是否为整数
+      const numAfterExponent = parseFloat(frontPart) * Math.pow(10, -exponent)
+      if (Number.isInteger(numAfterExponent)) {
+        decimalPlaces = 0
+      }
+      return Math.min(decimalPlaces, maxDecimal)
     }
-    return Math.min(decimalPlaces, maxDecimal)
   }
   // 常规展示小数，如 3.645 这样的处理 -> 3
+  // 添加了对纯零小数且长度大于最大小数位数限制时返回0的处理
   const decimalPart = numString.split('.')[1]
   const decimalPlaces = decimalPart?.length || defaultDecimal
-
+  if (
+    decimalPart &&
+    decimalPart.split('').every((digit) => digit === '0') &&
+    decimalPlaces > maxDecimal
+  ) {
+    return 0
+  }
   // 最小有效位处理
   return decimalPlaces > maxDecimal ? maxDecimal : decimalPlaces
 }
