@@ -14,7 +14,7 @@
 import { isNumber, isObject, isString } from './utils/index'
 import { getDecimalPlaces } from './utils'
 import Decimal from 'decimal.js'
-import { assign } from './utils/assign'
+// import { assign } from './utils/assign'
 
 /**
  * 默认基础配置项：小数点，税率，税种等

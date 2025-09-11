@@ -14,9 +14,9 @@
     // 是否生成sourceMap
     "sourceMap": false,
     // 编译目标
-    "target": "ES5",
+    "target": "ES2020",
     // 模块类型
-    "module": "ES6",
+    "module": "esnext",
     "moduleResolution": "Node",
     // 是否允许编译js文件
     "allowJs": false,
@@ -41,7 +41,7 @@
     // 定义文件输出目录
     "declarationDir": "./dist",
     // 导入库类型定义
-    "lib": ["esnext", "dom"],
+    "lib": ["ES2020", "esnext", "dom"],
     // 导入指定类型包
     "types": ["jest"]
   }

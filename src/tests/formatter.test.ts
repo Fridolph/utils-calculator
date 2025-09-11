@@ -11,17 +11,5 @@ describe('Class Formatter', () => {
       expect(formatterInst.format(123.0035, { decimalDigits: 4 })).toBe('123.0035')
       expect(formatterInst.format(123.0035, { decimalDigits: 3 })).toBe('123.004')
     })
-    // console.log(
-    //   formatterInst.formatWithConfigs(123.0034, {
-    //     prefix: 'kS ',
-    //     suffix: 'kWh',
-    //     decimalDigits: 2,
-    //   })
-    // )
-    // console.log(
-    //   formatterInst.formatMoney(123.0034, { currencySymbol: '￥', decimalDigits: 2 })
-    // )
-    // console.log(formatterInst.transObject(4.534, { suffix: 'kWh', decimalDigits: 2 }))
-
   })
 })
